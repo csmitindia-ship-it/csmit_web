@@ -91,6 +91,9 @@ async function createTablesIfNotExists() {
       symposiumName VARCHAR(255) NOT NULL,
       eventName VARCHAR(255) NOT NULL,
       eventDescription TEXT,
+      eventDate DATETIME,
+      registrationLimit INT,
+      registrationFees INT,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;

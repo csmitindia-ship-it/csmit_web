@@ -7,12 +7,70 @@ interface Event {
   eventName: string;
   eventDescription: string;
   symposiumName: 'Enigma' | 'Carteblanche';
+  eventDate: string;
+  registrationLimit: number;
+  registrationFees: number;
 }
+
+const EventCountdown: React.FC<{ eventDate: string }> = ({ eventDate }) => {
+  const calculateTimeLeft = () => {
+    const difference = +new Date(eventDate) - +new Date();
+    let timeLeft = {};
+
+    if (difference > 0) {
+      timeLeft = {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      };
+    }
+
+    return timeLeft;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  });
+
+  const timerComponents: JSX.Element[] = [];
+
+  Object.keys(timeLeft).forEach((interval) => {
+    if (!timeLeft[interval]) {
+      return;
+    }
+
+    timerComponents.push(
+      <span key={interval}>
+        {timeLeft[interval]} {interval}{" "}
+      </span>
+    );
+  });
+
+  return (
+    <div className="text-yellow-400 font-bold">
+      {timerComponents.length ? timerComponents : <span>Event has passed!</span>}
+    </div>
+  );
+};
+
 
 const ManageEventsPage: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [activeSymposium, setActiveSymposium] = useState<'Enigma' | 'Carteblanche'>('Enigma');
-  const [newEvent, setNewEvent] = useState({ eventName: '', eventDescription: '' });
+  const [newEvent, setNewEvent] = useState({
+    eventName: '',
+    eventDescription: '',
+    eventDate: '',
+    registrationLimit: 0,
+    registrationFees: 0,
+  });
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,10 +92,11 @@ const ManageEventsPage: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    const valueToSet = e.target.type === 'number' ? parseInt(value, 10) : value;
     if (editingEvent) {
-      setEditingEvent({ ...editingEvent, [name]: value });
+      setEditingEvent({ ...editingEvent, [name]: valueToSet });
     } else {
-      setNewEvent(prev => ({ ...prev, [name]: value }));
+      setNewEvent(prev => ({ ...prev, [name]: valueToSet }));
     }
   };
 
@@ -55,7 +114,13 @@ const ManageEventsPage: React.FC = () => {
       .then(res => res.json())
       .then(() => {
         fetchEvents();
-        setNewEvent({ eventName: '', eventDescription: '' });
+        setNewEvent({
+          eventName: '',
+          eventDescription: '',
+          eventDate: '',
+          registrationLimit: 0,
+          registrationFees: 0,
+        });
         setEditingEvent(null);
         setModalTitle('Success');
         setModalMessage(`Event ${editingEvent ? 'updated' : 'added'} successfully!`);
@@ -144,6 +209,32 @@ const ManageEventsPage: React.FC = () => {
               className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
               required
             ></textarea>
+            <input
+              type="datetime-local"
+              name="eventDate"
+              value={editingEvent ? editingEvent.eventDate : newEvent.eventDate}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              required
+            />
+            <input
+              type="number"
+              name="registrationLimit"
+              value={editingEvent ? editingEvent.registrationLimit : newEvent.registrationLimit}
+              onChange={handleInputChange}
+              placeholder="Registration Limit"
+              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              required
+            />
+            <input
+              type="number"
+              name="registrationFees"
+              value={editingEvent ? editingEvent.registrationFees : newEvent.registrationFees}
+              onChange={handleInputChange}
+              placeholder="Registration Fees"
+              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              required
+            />
             <button type="submit" className="w-full px-8 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:scale-105 transition-transform">
               {editingEvent ? 'Update Event' : 'Save Event'}
             </button>
@@ -161,6 +252,12 @@ const ManageEventsPage: React.FC = () => {
               <div>
                 <h4 className="text-xl font-bold text-white">{event.eventName}</h4>
                 <p className="text-gray-300 mt-2">{event.eventDescription}</p>
+                <div className="text-gray-400 mt-2">
+                  <p>Date: {new Date(event.eventDate).toLocaleString()}</p>
+                  <p>Registration Limit: {event.registrationLimit}</p>
+                  <p>Registration Fees: ${event.registrationFees}</p>
+                </div>
+                <EventCountdown eventDate={event.eventDate} />
               </div>
               <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 ml-4 flex-shrink-0">
                 <button onClick={() => setEditingEvent(event)} className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700">
