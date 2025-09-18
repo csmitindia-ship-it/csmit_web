@@ -270,12 +270,12 @@ export default function HomePage() {
                     <div className="bg-gray-900/70 backdrop-blur-md border border-gray-700 p-8 rounded-lg">
                         <h3 className="text-2xl font-bold text-white mb-3">ENIGMA</h3>
                         <p className="text-gray-300 mb-4">A premier technical symposium featuring cutting-edge competitions in AI, ML, and emerging technologies.</p>
-                        <Link to="/events" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
+                        <Link to="/events?symposium=Enigma" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
                     </div>
                     <div className="bg-gray-900/70 backdrop-blur-md border border-gray-700 p-8 rounded-lg">
                         <h3 className="text-2xl font-bold text-white mb-3">CARTE BLANCHE</h3>
                         <p className="text-gray-300 mb-4">An innovation fest celebrating creativity in technology with workshops, seminars, and competitions.</p>
-                        <Link to="/events" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
+                        <Link to="/events?symposium=Carteblanche" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
                     </div>
                 </div>
             </section>

@@ -47,38 +47,53 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
         </div>
 
         {/* Navigation Links */}
+        {/* Navigation Links */}
         <div className="hidden md:flex space-x-6">
-          <a
-            href="#home"
-            onClick={(e) => handleNavClick(e, "#home")}
-            className="text-white hover:text-purple-400 transition"
-          >
-            Home
-          </a>
-          <a
-            href="#alumni"
-            onClick={(e) => handleNavClick(e, "#alumni")}
-            className="text-white hover:text-purple-400 transition"
-          >
-            Alumni
-          </a>
-          <a
-            href="#about"
-            onClick={(e) => handleNavClick(e, "#about")}
-            className="text-white hover:text-purple-400 transition"
-          >
-            About
-          </a>
-          <a
-            href="#events"
-            onClick={(e) => handleNavClick(e, "#events")}
-            className="text-white hover:text-purple-400 transition"
-          >
-            Events
-          </a>
+          {user?.role !== 'admin' && ( // Check if user is NOT admin
+            <>
+              <a
+                href="#home"
+                onClick={(e) => handleNavClick(e, "#home")}
+                className="text-white hover:text-purple-400 transition"
+              >
+                Home
+              </a>
+              <a
+                href="#alumni"
+                onClick={(e) => handleNavClick(e, "#alumni")}
+                className="text-white hover:text-purple-400 transition"
+              >
+                Alumni
+              </a>
+              <a
+                href="#about"
+                onClick={(e) => handleNavClick(e, "#about")}
+                className="text-white hover:text-purple-400 transition"
+              >
+                About
+              </a>
+            </>
+          )}
+          {user?.role === 'admin' ? (
+            <a
+              href="/admin"
+              onClick={(e) => { e.preventDefault(); navigate("/admin"); }}
+              className="text-white hover:text-purple-400 transition"
+            >
+              Managements
+            </a>
+          ) : (
+            <a
+              href="#events"
+              onClick={(e) => handleNavClick(e, "#events")}
+              className="text-white hover:text-purple-400 transition"
+            >
+              Events
+            </a>
+          )}
           <a
             href="/placements"
-            onClick={() => navigate("/placements")}
+            onClick={(e) => { e.preventDefault(); navigate("/placements"); }}
             className="text-white hover:text-purple-400 transition"
           >
             Placements

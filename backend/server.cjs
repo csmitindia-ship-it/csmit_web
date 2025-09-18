@@ -94,6 +94,7 @@ async function createTablesIfNotExists() {
       eventDate DATETIME,
       registrationLimit INT,
       registrationFees INT,
+      posterUrl VARCHAR(255) DEFAULT NULL, -- Added posterUrl column
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;

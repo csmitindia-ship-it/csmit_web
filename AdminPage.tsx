@@ -42,6 +42,12 @@ const AdminPage: React.FC = () => {
               Manage Events
             </button>
             <button
+              onClick={() => navigate('events-display')}
+              className={getButtonClass('events-display')}
+            >
+              View Events
+            </button>
+            <button
               onClick={() => navigate('pending-experiences')}
               className={getButtonClass('pending-experiences')}
             >

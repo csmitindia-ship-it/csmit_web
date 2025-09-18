@@ -6,16 +6,37 @@ interface Event {
   id: number;
   eventName: string;
   eventDescription: string;
+  eventCategory: string;
+  eventOrganizer: string;
+  startDate: string;
+  endDate: string;
+  timeZone: string;
+  isRecurring: boolean;
+  recurringInfo?: string;
+  physicalAddress?: string;
+  onlineLink?: string;
+  registrationLink?: string;
+  registrationDeadline: string;
+  participationFee: number;
+  registrationFees?: number;
+  eligibilityCriteria?: string;
+  maxParticipants?: number;
+  coordinatorEmail: string;
+  coordinatorPhone?: string;
+  supportContact?: string;
+  agenda?: string;
+  speakers?: string;
+  documents?: string;
+  media?: string;
+  eventType: 'Individual' | 'Team';
+  teamSize?: number;
   symposiumName: 'Enigma' | 'Carteblanche';
-  eventDate: string;
-  registrationLimit: number;
-  registrationFees: number;
 }
 
 const EventCountdown: React.FC<{ eventDate: string }> = ({ eventDate }) => {
   const calculateTimeLeft = () => {
     const difference = +new Date(eventDate) - +new Date();
-    let timeLeft = {};
+    let timeLeft: { [key: string]: number } = {};
 
     if (difference > 0) {
       timeLeft = {
@@ -67,9 +88,26 @@ const ManageEventsPage: React.FC = () => {
   const [newEvent, setNewEvent] = useState({
     eventName: '',
     eventDescription: '',
-    eventDate: '',
-    registrationLimit: 0,
-    registrationFees: 0,
+    eventCategory: '',
+    eventOrganizer: '',
+    startDate: '',
+    endDate: '',
+    timeZone: '',
+    isRecurring: false,
+    recurringInfo: '',
+    physicalAddress: '',
+    onlineLink: '',
+    registrationDeadline: '',
+    participationFee: 0,
+    eligibilityCriteria: '',
+    maxParticipants: undefined,
+    coordinatorEmail: '',
+    coordinatorPhone: '',
+    supportContact: '',
+    agenda: '',
+    speakers: '',
+    eventType: 'Individual',
+    teamSize: undefined,
   });
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
@@ -90,9 +128,9 @@ const ManageEventsPage: React.FC = () => {
     fetchEvents();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    const valueToSet = e.target.type === 'number' ? parseInt(value, 10) : value;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const valueToSet = type === 'number' ? parseInt(value, 10) : (type === 'checkbox' ? (e.target as HTMLInputElement).checked : value);
     if (editingEvent) {
       setEditingEvent({ ...editingEvent, [name]: valueToSet });
     } else {
@@ -103,6 +141,15 @@ const ManageEventsPage: React.FC = () => {
   const handleSaveEvent = (e: React.FormEvent) => {
     e.preventDefault();
     const eventData = editingEvent ? { ...editingEvent } : { ...newEvent, symposiumName: activeSymposium };
+    // Ensure eventDate is correctly mapped to startDate and endDate for new events
+    if (!editingEvent) {
+      eventData.startDate = newEvent.startDate;
+      eventData.endDate = newEvent.endDate;
+      // Remove the old eventDate if it exists from previous structure
+      delete (eventData as any).eventDate;
+      delete (eventData as any).registrationLimit;
+      delete (eventData as any).registrationFees;
+    }
     const url = editingEvent ? `http://localhost:5001/events/${editingEvent.id}` : 'http://localhost:5001/events';
     const method = editingEvent ? 'PUT' : 'POST';
 
@@ -117,9 +164,32 @@ const ManageEventsPage: React.FC = () => {
         setNewEvent({
           eventName: '',
           eventDescription: '',
-          eventDate: '',
-          registrationLimit: 0,
-          registrationFees: 0,
+          eventCategory: '',
+          eventOrganizer: '',
+          startDate: '',
+          endDate: '',
+          timeZone: '',
+          isRecurring: false,
+          recurringInfo: '',
+          physicalAddress: '',
+          onlineLink: '',
+          registrationDeadline: '',
+          participationFee: 0,
+          eligibilityCriteria: '',
+          maxParticipants: undefined,
+          coordinatorEmail: '',
+          coordinatorPhone: '',
+          supportContact: '',
+          agenda: '',
+          speakers: '',
+          eventType: 'Individual',
+          teamSize: undefined,
+          eventTags: '',
+          eventRules: '',
+          socialMediaLinks: '',
+          sponsors: '',
+          notes: '',
+          eventStatus: 'Upcoming',
         });
         setEditingEvent(null);
         setModalTitle('Success');
@@ -191,50 +261,221 @@ const ManageEventsPage: React.FC = () => {
         <div>
           <h3 className="text-2xl font-bold text-white mb-6">{editingEvent ? 'Edit' : 'Add'} Event</h3>
           <form onSubmit={handleSaveEvent} className="space-y-6">
-            <input
-              type="text"
-              name="eventName"
-              value={editingEvent ? editingEvent.eventName : newEvent.eventName}
-              onChange={handleInputChange}
-              placeholder="Event Title"
-              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-            <textarea
-              name="eventDescription"
-              value={editingEvent ? editingEvent.eventDescription : newEvent.eventDescription}
-              onChange={handleInputChange}
-              placeholder="Event Description"
-              rows={5}
-              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            ></textarea>
-            <input
-              type="datetime-local"
-              name="eventDate"
-              value={editingEvent ? editingEvent.eventDate : newEvent.eventDate}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-            <input
-              type="number"
-              name="registrationLimit"
-              value={editingEvent ? editingEvent.registrationLimit : newEvent.registrationLimit}
-              onChange={handleInputChange}
-              placeholder="Registration Limit"
-              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-            <input
-              type="number"
-              name="registrationFees"
-              value={editingEvent ? editingEvent.registrationFees : newEvent.registrationFees}
-              onChange={handleInputChange}
-              placeholder="Registration Fees"
-              className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
+            {/* Basic Event Information */}
+            <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+              <h4 className="text-xl font-bold text-white mb-4">Basic Event Information</h4>
+              <input
+                type="text"
+                name="eventName"
+                value={editingEvent ? editingEvent.eventName : newEvent.eventName}
+                onChange={handleInputChange}
+                placeholder="Event Name / Title"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              />
+              <textarea
+                name="eventDescription"
+                value={editingEvent ? editingEvent.eventDescription : newEvent.eventDescription}
+                onChange={handleInputChange}
+                placeholder="Event Description"
+                rows={4}
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              ></textarea>
+              <select
+                name="eventCategory"
+                value={editingEvent ? editingEvent.eventCategory : newEvent.eventCategory}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              >
+                <option value="">Select Event Category / Type</option>
+                <option value="Workshop">Workshop</option>
+                <option value="Seminar">Seminar</option>
+                <option value="Webinar">Webinar</option>
+                <option value="Competition">Competition</option>
+                <option value="Festival">Festival</option>
+                <option value="Other">Other</option>
+              </select>
+              <input
+                type="text"
+                name="eventOrganizer"
+                value={editingEvent ? editingEvent.eventOrganizer : newEvent.eventOrganizer}
+                onChange={handleInputChange}
+                placeholder="Event Organizer"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+              />
+            </div>
+
+            {/* Date & Time */}
+            <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+              <h4 className="text-xl font-bold text-white mb-4">Date & Time</h4>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Start Date & Time</label>
+              <input
+                type="datetime-local"
+                name="startDate"
+                value={editingEvent ? editingEvent.startDate : newEvent.startDate}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              />
+              <label className="block text-sm font-medium text-gray-400 mb-2">End Date & Time</label>
+              <input
+                type="datetime-local"
+                name="endDate"
+                value={editingEvent ? editingEvent.endDate : newEvent.endDate}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              />
+              <input
+                type="text"
+                name="timeZone"
+                value={editingEvent ? editingEvent.timeZone : newEvent.timeZone}
+                onChange={handleInputChange}
+                placeholder="Time Zone (e.g., UTC, EST)"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+              />
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  name="isRecurring"
+                  checked={editingEvent ? editingEvent.isRecurring : newEvent.isRecurring}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-700 rounded"
+                />
+                <label className="ml-2 block text-sm text-gray-300">Recurring Event</label>
+              </div>
+              {(editingEvent ? editingEvent.isRecurring : newEvent.isRecurring) && (
+                <input
+                  type="text"
+                  name="recurringInfo"
+                  value={editingEvent ? editingEvent.recurringInfo : newEvent.recurringInfo}
+                  onChange={handleInputChange}
+                  placeholder="Recurring Event Info (e.g., Weekly on Mondays)"
+                  className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              )}
+            </div>
+
+            {/* Location / Venue */}
+            <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+              <h4 className="text-xl font-bold text-white mb-4">Location / Venue</h4>
+              <input
+                type="text"
+                name="physicalAddress"
+                value={editingEvent ? editingEvent.physicalAddress : newEvent.physicalAddress}
+                onChange={handleInputChange}
+                placeholder="Physical Address (Street, City, Room)"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+              />
+              <input
+                type="url"
+                name="onlineLink"
+                value={editingEvent ? editingEvent.onlineLink : newEvent.onlineLink}
+                onChange={handleInputChange}
+                placeholder="Online Link (Zoom, Google Meet)"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            {/* Registration & Participation */}
+            <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+              <h4 className="text-xl font-bold text-white mb-4">Registration & Participation</h4>
+              
+              <label className="block text-sm font-medium text-gray-400 mb-2">Registration Deadline</label>
+              <input
+                type="datetime-local"
+                name="registrationDeadline"
+                value={editingEvent ? editingEvent.registrationDeadline : newEvent.registrationDeadline}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              />
+              <label className="block text-sm font-medium text-gray-400 mb-2">Participation Fee</label>
+              <input
+                type="number"
+                name="participationFee"
+                aria-placeholder='Fees..'
+                value={editingEvent ? editingEvent.participationFee : newEvent.participationFee}
+                onChange={handleInputChange}
+                placeholder="Participation Fee (0 for Free)"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              />
+              <textarea
+                name="eligibilityCriteria"
+                value={editingEvent ? editingEvent.eligibilityCriteria : newEvent.eligibilityCriteria}
+                onChange={handleInputChange}
+                placeholder="Eligibility Criteria (Age, membership, skill level)"
+                rows={2}
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+              ></textarea>
+              <input
+                type="number"
+                name="maxParticipants"
+                value={editingEvent ? editingEvent.maxParticipants : newEvent.maxParticipants}
+                onChange={handleInputChange}
+                placeholder="Maximum Participants (optional)"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+              />
+              <select
+                name="eventType"
+                value={editingEvent ? editingEvent.eventType : newEvent.eventType}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              >
+                <option value="Individual">Individual Event</option>
+                <option value="Team">Team Event</option>
+              </select>
+              {(editingEvent ? editingEvent.eventType : newEvent.eventType) === 'Team' && (
+                <input
+                  type="number"
+                  name="teamSize"
+                  value={editingEvent ? editingEvent.teamSize : newEvent.teamSize}
+                  onChange={handleInputChange}
+                  placeholder="Team Size"
+                  className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              )}
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+              <h4 className="text-xl font-bold text-white mb-4">Contact Information</h4>
+              <input
+                type="email"
+                name="coordinatorEmail"
+                value={editingEvent ? editingEvent.coordinatorEmail : newEvent.coordinatorEmail}
+                onChange={handleInputChange}
+                placeholder="Event Coordinator Email"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                required
+              />
+              <input
+                type="tel"
+                name="coordinatorPhone"
+                value={editingEvent ? editingEvent.coordinatorPhone : newEvent.coordinatorPhone}
+                onChange={handleInputChange}
+                placeholder="Event Coordinator Phone (optional)"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+              />
+              <input
+                type="email"
+                name="supportContact"
+                value={editingEvent ? editingEvent.supportContact : newEvent.supportContact}
+                onChange={handleInputChange}
+                placeholder="Support Contact / Helpdesk Email (optional)"
+                className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            
+
+            {/* Additional Details */}
+            
             <button type="submit" className="w-full px-8 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:scale-105 transition-transform">
               {editingEvent ? 'Update Event' : 'Save Event'}
             </button>
@@ -253,11 +494,10 @@ const ManageEventsPage: React.FC = () => {
                 <h4 className="text-xl font-bold text-white">{event.eventName}</h4>
                 <p className="text-gray-300 mt-2">{event.eventDescription}</p>
                 <div className="text-gray-400 mt-2">
-                  <p>Date: {new Date(event.eventDate).toLocaleString()}</p>
-                  <p>Registration Limit: {event.registrationLimit}</p>
+                  <p>Date: {new Date(event.startDate).toLocaleString()}</p>
                   <p>Registration Fees: ${event.registrationFees}</p>
                 </div>
-                <EventCountdown eventDate={event.eventDate} />
+                <EventCountdown eventDate={event.startDate} />
               </div>
               <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-3 ml-4 flex-shrink-0">
                 <button onClick={() => setEditingEvent(event)} className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700">

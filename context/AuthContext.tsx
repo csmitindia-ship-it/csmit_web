@@ -4,24 +4,27 @@ interface AuthContextType {
   user: { email: string; role: 'admin' | 'student' | null; name?: string } | null;
   login: (email: string, role: 'admin' | 'student', name?: string) => void;
   logout: () => void;
+  loading: boolean; // Add loading state
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<{ email: string; role: 'admin' | 'student' | null; name?: string } | null>(() => {
-    // Initialize user from localStorage
-    const storedUser = localStorage.getItem('user');
+    // Initialize user from sessionStorage
+    const storedUser = sessionStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
   });
+  const [loading, setLoading] = useState(true); // Initialize loading to true
 
   useEffect(() => {
-    // Persist user to localStorage whenever it changes
+    // Persist user to sessionStorage whenever it changes
     if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('user', JSON.stringify(user));
     } else {
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
     }
+    setLoading(false); // Set loading to false after user is initialized/persisted
   }, [user]);
 
   const login = (email: string, role: 'admin' | 'student', name?: string) => {
