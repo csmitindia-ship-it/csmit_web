@@ -1,30 +1,154 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import Header from '../ui/Header';
+import LoginPage from '../Login_Sign/LoginPage';
+import SignUpPage from '../Login_Sign/SignUpPage';
+import ForgotPassword from '../Login_Sign/Forgot_Pass';
+import backgroundImage from '../Login_Sign/photo.jpeg';
+import { useSearchParams } from 'react-router-dom';
+import GeneralRegistrationForm from './GeneralRegistrationForm';
+import WorkshopRegistrationForm from './WorkshopRegistrationForm';
 
 const RegistrationPage: React.FC = () => {
-  const location = useLocation();
-  const { user } = location.state || {}; // Get user from state
+  const { user } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const eventId = searchParams.get('eventId');
+  const symposium = searchParams.get('symposium');
+  const [event, setEvent] = useState<any>(null);
+
+  useEffect(() => {
+    if (eventId) {
+      fetch(`http://localhost:5001/events/${eventId}?symposium=${symposium}`)
+        .then(res => res.json())
+        .then(data => setEvent(data));
+    }
+  }, [eventId, symposium]);
+
+  const handleSwitchToSignUp = () => {
+    setIsLoginModalOpen(false);
+    setIsSignUpModalOpen(true);
+  };
+
+  const handleSwitchToLogin = () => {
+    setIsSignUpModalOpen(false);
+    setIsForgotPasswordModalOpen(false);
+    setIsLoginModalOpen(true);
+  };
+
+  const handleSwitchToForgotPassword = () => {
+    setIsLoginModalOpen(false);
+    setIsForgotPasswordModalOpen(true);
+  };
 
   if (!user) {
-    // Handle case where user data is not available (e.g., direct access or refresh)
-    return <div className="text-white">No user data available. Please log in.</div>;
+    // This case should ideally be handled by ProtectedRoute, but as a fallback
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8 flex flex-col items-center justify-center">
+        <p className="text-xl mb-4">You need to be logged in to access this page.</p>
+        <button
+          onClick={() => setIsLoginModalOpen(true)}
+          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
+        >
+          Login
+        </button>
+        <LoginPage 
+            isOpen={isLoginModalOpen} 
+            onClose={() => setIsLoginModalOpen(false)} 
+            onSwitchToSignUp={handleSwitchToSignUp} 
+            onSwitchToForgotPassword={handleSwitchToForgotPassword} 
+        />
+        <SignUpPage 
+            isOpen={isSignUpModalOpen} 
+            onClose={() => setIsSignUpModalOpen(false)} 
+            onSwitchToLogin={handleSwitchToLogin} 
+        />
+        <ForgotPassword 
+            isOpen={isForgotPasswordModalOpen} 
+            onClose={() => setIsForgotPasswordModalOpen(false)} 
+            onSwitchToLogin={handleSwitchToLogin} 
+        />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <h1 className="text-3xl font-bold mb-6">Registration Page</h1>
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">User Details:</h2>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Role:</strong> {user.role}</p>
-        {user.name && <p><strong>Name:</strong> {user.name}</p>}
+    <> {/* Added fragment for style tag */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+      `}</style>
+      <div 
+        className="relative min-h-screen font-sans text-gray-200 overflow-x-hidden" // Added classes
+        style={{
+          fontFamily: "'Poppins', sans-serif", // Added inline style
+        }}
+      >
+        {/* Background Image Layer */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-fixed"
+          style={{
+            backgroundImage: `url(${backgroundImage})`
+          }}
+        ></div>
+
+        {/* Overlay Layer */}
+        <div className="absolute inset-0 bg-black/70 z-0"></div>
+
+        <Header 
+          setIsLoginModalOpen={setIsLoginModalOpen} 
+          setIsSignUpModalOpen={setIsSignUpModalOpen} 
+        />
+        <div className="pt-20 p-8 relative z-10"> {/* Added relative z-10 */}
+          <h1 className="text-3xl font-bold mb-6">Registration Page</h1>
+          <div className="bg-gray-800/80 p-6 rounded-lg shadow-lg"> {/* Changed bg-gray-800 to bg-gray-800/80 */}
+            <h2 className="text-xl font-semibold mb-4">User Details:</h2>
+            <p><strong>Email:</strong> {user.email}</p>
+            <p><strong>Role:</strong> {user.role}</p>
+            {user.name && <p><strong>Name:</strong> {user.name}</p>}
+          </div>
+          {event && (
+            <>
+              {symposium === 'Enigma' && event.eventCategory === 'Workshop' ? (
+                <WorkshopRegistrationForm 
+                  eventName={event.eventName}
+                  userName={user.name || ''}
+                  userEmail={user.email}
+                  symposium={symposium}
+                  eventId={eventId || ''}
+                  registrationFee={event.registrationFees}
+                />
+              ) : (
+                <GeneralRegistrationForm 
+                  eventName={event.eventName}
+                  userName={user.name || ''}
+                  userEmail={user.email}
+                  symposium={symposium || ''}
+                  eventId={eventId || ''}
+                />
+              )}
+            </>
+          )}
+        </div>
+        <LoginPage 
+            isOpen={isLoginModalOpen} 
+            onClose={() => setIsLoginModalOpen(false)} 
+            onSwitchToSignUp={handleSwitchToSignUp} 
+            onSwitchToForgotPassword={handleSwitchToForgotPassword} 
+        />
+        <SignUpPage 
+            isOpen={isSignUpModalOpen} 
+            onClose={() => setIsSignUpModalOpen(false)} 
+            onSwitchToLogin={handleSwitchToLogin} 
+        />
+        <ForgotPassword 
+            isOpen={isForgotPasswordModalOpen} 
+            onClose={() => setIsForgotPasswordModalOpen(false)} 
+            onSwitchToLogin={handleSwitchToLogin} 
+        />
       </div>
-      {/* Event details will be displayed here later */}
-      <div className="mt-8 bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">Event Details:</h2>
-        <p>Event details will be provided soon.</p>
-      </div>
-    </div>
+    </> // Added fragment
   );
 };
 

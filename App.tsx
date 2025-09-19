@@ -1,15 +1,32 @@
 import { useState, useEffect } from "react";
 import HomePage from "./HomePage";
+import { useAuth } from "./context/AuthContext";
 
 export default function App() {
   const [showIntro, setShowIntro] = useState(sessionStorage.getItem('introSeen') !== 'true');
   const [currentLine, setCurrentLine] = useState(0);
   const [text, setText] = useState("");
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log('App: beforeunload event fired, logging out.');
+      logout();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [logout]);
 
   const lines = [
     "Initializing... Starting Computer Society of MIT",
     "Loading Innovation Modules..."
   ];
+
+  
 
   useEffect(() => {
     if (showIntro && currentLine < lines.length) {

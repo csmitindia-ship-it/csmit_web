@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Header from "./ui/Header";
+
+
 import backgroundImage from './Login_Sign/photo.jpeg';
 import LoginPage from './Login_Sign/LoginPage';
 import SignUpPage from './Login_Sign/SignUpPage';
@@ -102,7 +104,7 @@ export default function HomePage() {
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
 
   
 

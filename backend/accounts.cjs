@@ -1,0 +1,73 @@
+const express = require('express');
+
+module.exports = (db) => {
+  const router = express.Router();
+
+  // Add new account details
+  router.post('/', async (req, res) => {
+    const { accountName, bankName, accountNumber, ifscCode } = req.body;
+    if (!accountName || !bankName || !accountNumber || !ifscCode) {
+      return res.status(400).json({ message: 'All fields are required.' });
+    }
+    try {
+      const [result] = await db.execute(
+        'INSERT INTO accounts (accountName, bankName, accountNumber, ifscCode) VALUES (?, ?, ?, ?)',
+        [accountName, bankName, accountNumber, ifscCode]
+      );
+      res.status(201).json({ message: 'Account details added successfully', accountId: result.insertId });
+    } catch (error) {
+      console.error('Error adding account details:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get all account details
+  router.get('/', async (req, res) => {
+    try {
+      const [rows] = await db.execute('SELECT * FROM accounts');
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error fetching account details:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Update account details
+  router.put('/:id', async (req, res) => {
+    const { id } = req.params;
+    const { accountName, bankName, accountNumber, ifscCode } = req.body;
+    if (!accountName || !bankName || !accountNumber || !ifscCode) {
+      return res.status(400).json({ message: 'All fields are required.' });
+    }
+    try {
+      const [result] = await db.execute(
+        'UPDATE accounts SET accountName = ?, bankName = ?, accountNumber = ?, ifscCode = ? WHERE id = ?',
+        [accountName, bankName, accountNumber, ifscCode, id]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
+      res.status(200).json({ message: 'Account details updated successfully' });
+    } catch (error) {
+      console.error('Error updating account details:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Delete account details
+  router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const [result] = await db.execute('DELETE FROM accounts WHERE id = ?', [id]);
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Account not found' });
+      }
+      res.status(200).json({ message: 'Account details deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting account details:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  return router;
+};

@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import photo from './photo.jpeg'; // Added import for photo
+import { useNavigate } from 'react-router-dom';
 
 interface SignUpPageProps {
   isOpen: boolean;
@@ -9,8 +7,8 @@ interface SignUpPageProps {
   onSwitchToLogin: () => void;
 }
 
-const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogin }) => { // Added props
-  if (!isOpen) return null; // Added conditional rendering
+const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogin }) => {
+  if (!isOpen) return null;
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -24,20 +22,28 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
     state: 'Tamil Nadu',
     district: ''
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
-  const states = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
+  const states = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+    "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim",
+    "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand",
+    "West Bengal"
+  ];
   const departments = ["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL", "AUTO"];
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear + i - 5);
 
   const handleSwitch = (e: React.MouseEvent) => {
     e.preventDefault();
-    onSwitchToLogin(); // Use prop function
+    onSwitchToLogin();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -53,9 +59,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
     try {
       const response = await fetch('http://localhost:5001/auth/signup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
@@ -64,7 +68,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
       if (response.ok) {
         setSuccess('Signed up successfully!');
         setTimeout(() => {
-          onSwitchToLogin(); // Use prop function after successful signup
+          onSwitchToLogin();
         }, 2000);
       } else {
         setError(data.message || 'Failed to create account.');
@@ -76,16 +80,16 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" // Changed to fixed overlay
-      onClick={onClose} // Close modal when clicking outside
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-2xl bg-gray-900/80 border border-purple-500/30 rounded-2xl p-8 shadow-2xl shadow-purple-500/20 overflow-y-auto max-h-[90vh] z-10"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        onClick={(e) => e.stopPropagation()}
       >
-        <button 
-          onClick={onClose} // Use prop function
+        <button
+          onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-purple-400 transition-colors duration-300 z-10"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -113,7 +117,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
           <div className="relative">
             <label className="block text-sm font-medium text-gray-400 mb-1">Password</label>
             <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} placeholder="Create a strong password" className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" required />
-            <button 
+            <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-gray-400 hover:text-purple-400"

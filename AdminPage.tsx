@@ -59,6 +59,12 @@ const AdminPage: React.FC = () => {
             >
               Approved Experiences
             </button>
+            <button
+              onClick={() => navigate('account-details')}
+              className={getButtonClass('account-details')}
+            >
+              Account Details
+            </button>
           </div>
 
           <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg">

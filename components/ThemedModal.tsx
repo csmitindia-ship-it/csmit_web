@@ -1,12 +1,11 @@
-import React from 'react';
-
 interface ThemedModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  message: string;
+  message?: string;
   onConfirm?: () => void;
   showConfirmButton?: boolean;
+  children?: React.ReactNode;
 }
 
 const ThemedModal: React.FC<ThemedModalProps> = ({
@@ -16,15 +15,17 @@ const ThemedModal: React.FC<ThemedModalProps> = ({
   message,
   onConfirm,
   showConfirmButton = false,
+  children,
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
       <div className="bg-gray-800 border border-purple-500 rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all duration-300 scale-100 opacity-100">
         <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>
-        <p className="text-gray-300 mb-6">{message}</p>
-        <div className="flex justify-end space-x-4">
+        {message && <p className="text-gray-300 mb-6">{message}</p>}
+        {children}
+        <div className="flex justify-end space-x-4 mt-6">
           {showConfirmButton && (
             <button
               onClick={() => {

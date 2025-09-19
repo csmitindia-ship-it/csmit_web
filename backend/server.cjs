@@ -156,6 +156,39 @@ async function createTablesIfNotExists() {
     );
   `;
 
+  const createAccountsTableQuery = `
+    CREATE TABLE IF NOT EXISTS accounts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      accountName VARCHAR(255) NOT NULL,
+      bankName VARCHAR(255) NOT NULL,
+      accountNumber VARCHAR(255) NOT NULL,
+      ifscCode VARCHAR(255) NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const createEventAccountsTableQuery = `
+    CREATE TABLE IF NOT EXISTS event_accounts (
+      eventId INT NOT NULL,
+      accountId INT NOT NULL,
+      PRIMARY KEY (eventId, accountId),
+      FOREIGN KEY (eventId) REFERENCES enigma_events(id) ON DELETE CASCADE,
+      FOREIGN KEY (accountId) REFERENCES accounts(id) ON DELETE CASCADE
+    );
+  `;
+
+  const createRegistrationsTableQuery = `
+    CREATE TABLE IF NOT EXISTS registrations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      symposium VARCHAR(255) NOT NULL,
+      eventId INT NOT NULL,
+      userName VARCHAR(255) NOT NULL,
+      userEmail VARCHAR(255) NOT NULL,
+      transactionId VARCHAR(255),
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
   try {
     await db.execute(createUserTableQuery);
     console.log('Users table is ready.');
@@ -171,6 +204,12 @@ async function createTablesIfNotExists() {
     console.log('Enigma rounds table is ready.');
     await db.execute(createCarteBlancheRoundsTableQuery);
     console.log('Carte Blanche rounds table is ready.');
+    await db.execute(createAccountsTableQuery);
+    console.log('Accounts table is ready.');
+    await db.execute(createEventAccountsTableQuery);
+    console.log('Event accounts table is ready.');
+    await db.execute(createRegistrationsTableQuery);
+    console.log('Registrations table is ready.');
   } catch (error) {
     console.error('Error creating tables:', error);
     process.exit(1);
@@ -193,10 +232,14 @@ async function startServer() {
   const authRouter = require('./auth.cjs')(db, transporter);
   const eventsRouter = require('./events.cjs')(db, uploadEventPoster, eventPosterDir);
   const placementsRouter = require('./placements.cjs')(db, uploadPdf);
+  const accountsRouter = require('./accounts.cjs')(db);
+  const registrationsRouter = require('./registrations.cjs')(db);
 
   app.use('/auth', authRouter);
   app.use('/events', eventsRouter);
   app.use(placementsRouter);
+  app.use('/admin/accounts', accountsRouter);
+  app.use('/register', registrationsRouter);
 
   // --- Start Server ---
   app.use((req, res, next) => {

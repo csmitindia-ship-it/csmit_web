@@ -94,6 +94,35 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
     }
   });
 
+  router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    const { symposium } = req.query;
+
+    if (!symposium) {
+      return res.status(400).json({ message: 'Symposium name is required.' });
+    }
+
+    let eventTable;
+    if (symposium === 'Enigma') {
+      eventTable = 'enigma_events';
+    } else if (symposium === 'Carteblanche') {
+      eventTable = 'carte_blanche_events';
+    } else {
+      return res.status(400).json({ message: 'Invalid symposium name.' });
+    }
+
+    try {
+      const [rows] = await db.execute(`SELECT * FROM ${eventTable} WHERE id = ?`, [id]);
+      if (rows.length === 0) {
+        return res.status(404).json({ message: 'Event not found.' });
+      }
+      res.json(rows[0]);
+    } catch (error) {
+      console.error('Error fetching event:', error);
+      res.status(500).json({ message: 'Failed to fetch event.' });
+    }
+  });
+
   router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const {
@@ -241,6 +270,86 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
     } catch (error) {
       console.error('Error removing poster:', error);
       res.status(500).json({ message: 'Failed to remove poster.' });
+    }
+  });
+
+  // Assign account to an event
+  router.post('/:eventId/accounts', async (req, res) => {
+    const { eventId } = req.params;
+    const { accountId } = req.body;
+
+    if (!accountId) {
+      return res.status(400).json({ message: 'Account ID is required.' });
+    }
+
+    try {
+      // Check if event exists (either in enigma_events or carte_blanche_events)
+      const [enigmaEvent] = await db.execute('SELECT id FROM enigma_events WHERE id = ?', [eventId]);
+      const [carteBlancheEvent] = await db.execute('SELECT id FROM carte_blanche_events WHERE id = ?', [eventId]);
+
+      if (enigmaEvent.length === 0 && carteBlancheEvent.length === 0) {
+        return res.status(404).json({ message: 'Event not found.' });
+      }
+
+      // Check if account exists
+      const [account] = await db.execute('SELECT id FROM accounts WHERE id = ?', [accountId]);
+      if (account.length === 0) {
+        return res.status(404).json({ message: 'Account not found.' });
+      }
+
+      // Check if already assigned
+      const [existingAssignment] = await db.execute(
+        'SELECT * FROM event_accounts WHERE eventId = ? AND accountId = ?',
+        [eventId, accountId]
+      );
+      if (existingAssignment.length > 0) {
+        return res.status(409).json({ message: 'Account already assigned to this event.' });
+      }
+
+      await db.execute(
+        'INSERT INTO event_accounts (eventId, accountId) VALUES (?, ?)',
+        [eventId, accountId]
+      );
+      res.status(201).json({ message: 'Account assigned to event successfully.' });
+    } catch (error) {
+      console.error('Error assigning account to event:', error);
+      res.status(500).json({ message: 'Internal server error.' });
+    }
+  });
+
+  // Get assigned accounts for an event
+  router.get('/:eventId/accounts', async (req, res) => {
+    const { eventId } = req.params;
+    try {
+      const [rows] = await db.execute(
+        `SELECT ea.accountId AS id, a.accountName, a.bankName, a.accountNumber, a.ifscCode
+         FROM event_accounts ea
+         JOIN accounts a ON ea.accountId = a.id
+         WHERE ea.eventId = ?`,
+        [eventId]
+      );
+      res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error fetching assigned accounts for event:', error);
+      res.status(500).json({ message: 'Internal server error.' });
+    }
+  });
+
+  // Remove account assignment from an event
+  router.delete('/:eventId/accounts/:accountId', async (req, res) => {
+    const { eventId, accountId } = req.params;
+    try {
+      const [result] = await db.execute(
+        'DELETE FROM event_accounts WHERE eventId = ? AND accountId = ?',
+        [eventId, accountId]
+      );
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Assignment not found.' });
+      }
+      res.status(200).json({ message: 'Account assignment removed successfully.' });
+    } catch (error) {
+      console.error('Error removing account assignment from event:', error);
+      res.status(500).json({ message: 'Internal server error.' });
     }
   });
 

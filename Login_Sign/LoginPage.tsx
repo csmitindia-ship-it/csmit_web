@@ -11,13 +11,13 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp, onSwitchToForgotPassword }) => {
+  if (!isOpen) return null; // Added conditional rendering
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth(); // Use the login function from AuthContext
-
-  if (!isOpen) return null; // Moved conditional rendering after hooks
 
   const handleSwitchToSignUp = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -32,9 +32,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (email === 'csmitindia@gmail.com' && password === 'Csmit@2025') {
-      console.log('Admin login successful. Setting role to admin and navigating to /admin');
       login(email, 'admin'); // Call login from AuthContext
       navigate('/admin'); // Navigate to admin page after login
+      onClose();
     } else {
       try {
         const response = await fetch('http://localhost:5001/auth/login', {
@@ -47,14 +47,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
 
         const data = await response.json();
 
-        if (response.ok && data.user) {
-  login(data.user.email, 'student', data.user.fullName);
-  navigate('/'); // Navigate first
-  onClose();     // Close modal after navigation
-}
- else {
+        if (response.ok) {
+          login(data.user.email, 'student', data.user.fullName);
+          navigate('/');
+          onClose();
+        } else {
           alert(data.message || 'Invalid credentials. Please try again.');
-          console.log('Login failed:', data.message || 'Invalid credentials.');
         }
       } catch (error) {
         console.error('Login failed:', error);

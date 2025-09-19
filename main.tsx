@@ -11,6 +11,7 @@ import PendingExperiencesPage from "./pages/PendingExperiencesPage.tsx";
 import ApprovedExperiencesPage from "./pages/ApprovedExperiencesPage.tsx";
 import ManageEventsPage from "./pages/ManageEventsPage.tsx";
 import AdminEventsDisplayPage from "./pages/AdminEventsDisplayPage.tsx"; // New import
+import AccountDetailsPage from "./pages/AccountDetailsPage.tsx"; // New import
 import PlacementsPage from "./placements/PlacementsPage";
 import LoginWrapper from "./Login_Sign/LoginWrapper"; // Import LoginWrapper
 import SignUpPage from "./Login_Sign/SignUpPage"; // Import SignUpPage
@@ -34,6 +35,7 @@ if (rootElement) {
                 <Route path="pending-experiences" element={<PendingExperiencesPage />} />
                 <Route path="approved-experiences" element={<ApprovedExperiencesPage />} />
                 <Route path="events-display" element={<AdminEventsDisplayPage />} /> {/* New route */}
+                <Route path="account-details" element={<AccountDetailsPage />} /> {/* New route */}
               </Route>
             </Route>
 
@@ -47,7 +49,9 @@ if (rootElement) {
             <Route path="/" element={<App />} />
 
             <Route path="/events" element={<EventsPage />} />
-            <Route path="/registration" element={<RegistrationPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/registration" element={<RegistrationPage />} />
+            </Route>
             
             
           </Routes>
