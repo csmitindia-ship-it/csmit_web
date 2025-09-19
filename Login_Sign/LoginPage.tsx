@@ -47,11 +47,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
 
         const data = await response.json();
 
-        if (response.ok) {
-          login(data.user.email, 'student', data.user.fullName);
-          navigate('/student-dashboard');
-        } else {
+        if (response.ok && data.user) {
+  login(data.user.email, 'student', data.user.fullName);
+  navigate('/'); // Navigate first
+  onClose();     // Close modal after navigation
+}
+ else {
           alert(data.message || 'Invalid credentials. Please try again.');
+          console.log('Login failed:', data.message || 'Invalid credentials.');
         }
       } catch (error) {
         console.error('Login failed:', error);

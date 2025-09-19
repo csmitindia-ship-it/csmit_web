@@ -1,51 +1,31 @@
-import React, { useEffect, useState } from "react";
+import React from 'react';
+import { createPortal } from 'react-dom';
 
 const Loader: React.FC = () => {
-  const [showLoader, setShowLoader] = useState(true);
-
-  // Hide loader after 5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => setShowLoader(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!showLoader) return null;
-
-  return (
+  return createPortal(
     <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 z-50">
-      <div className="relative w-20 h-20">
-        {/* Outer spinning triangle */}
-        <div className="absolute inset-0 animate-spin-slow">
-          <div className="w-0 h-0 border-l-[40px] border-l-transparent border-r-[40px] border-r-transparent border-b-[80px] border-b-purple-600"></div>
-        </div>
-
-        {/* Inner reverse-spinning triangle */}
-        <div
-          className="absolute inset-0 animate-spin-reverse-slow"
-          style={{ animationDelay: "5s" }}
-        >
-          <div className="w-0 h-0 border-l-[30px] border-l-transparent border-r-[30px] border-r-transparent border-b-[60px] border-b-purple-400"></div>
-        </div>
+      <div className="relative flex justify-center items-center">
+        <div className="absolute w-24 h-24 rounded-full animate-ping-slow border-4 border-purple-400"></div>
+        <div className="absolute w-16 h-16 rounded-full animate-ping-slow border-4 border-purple-500" style={{ animationDelay: '-0.5s' }}></div>
+        <div className="absolute w-8 h-8 rounded-full animate-ping-slow border-4 border-purple-600" style={{ animationDelay: '-1s' }}></div>
       </div>
-
-      {/* Custom animations */}
       <style>{`
-        @keyframes spin-slow {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        @keyframes ping-slow {
+          0%, 100% {
+            transform: scale(0.2);
+            opacity: 0.2;
+          }
+          50% {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
-        @keyframes spin-reverse-slow {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(-360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 5s linear infinite;
-        }
-        .animate-spin-reverse-slow {
-          animation: spin-reverse-slow 5s linear infinite;
+        .animate-ping-slow {
+          animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 };
 

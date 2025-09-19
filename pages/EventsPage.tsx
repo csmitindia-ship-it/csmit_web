@@ -1,47 +1,74 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
-import Header from '../ui/Header'; // Import the Header component
-import backgroundImage from '../Login_Sign/photo.jpeg'; // Import background image
-import LoginPage from '../Login_Sign/LoginPage'; // Import LoginPage
-import SignUpPage from '../Login_Sign/SignUpPage'; // Import SignUpPage
-import Loader from '../components/Loader'; // Import Loader component
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Header from '../ui/Header'; 
+import backgroundImage from '../Login_Sign/photo.jpeg'; 
+import LoginPage from '../Login_Sign/LoginPage'; 
+import SignUpPage from '../Login_Sign/SignUpPage'; 
+import Loader from '../components/Loader'; 
+import { useAuth } from '../context/AuthContext'; 
+
+interface Round {
+  roundNumber: number;
+  roundDetails: string;
+  roundDateTime: string;
+}
 
 interface Event {
   id: number;
-  symposiumName: string;
   eventName: string;
+  eventCategory: string;
   eventDescription: string;
-  posterUrl?: string; // Add posterUrl
-  registrationLink?: string; // Add registrationLink
+  numberOfRounds: number;
+  teamOrIndividual: 'Team' | 'Individual';
+  location: string;
+  registrationFees: number;
+  coordinatorName: string;
+  coordinatorContactNo: string;
+  coordinatorMail: string;
+  lastDateForRegistration: string;
+  symposiumName: 'Enigma' | 'Carteblanche';
+  rounds?: Round[];
+  posterUrl?: string; 
+  registrationLink?: string;
 }
 
 const EventsPage: React.FC = () => {
+  console.log('EventsPage: Component rendered.');
   const [events, setEvents] = useState<Event[]>([]);
-  const location = useLocation();
   const [activeSymposium, setActiveSymposium] = useState<'Enigma' | 'Carteblanche'>('Enigma');
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // State for login modal
-  const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false); // State for signup modal
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
   const fetchEvents = async () => {
-    setIsLoading(true); // Set loading to true when fetch starts
+    setIsLoading(true);
+    console.log('EventsPage: Fetching events...');
     try {
       const response = await fetch('http://localhost:5001/events');
       const data: Event[] = await response.json();
       setEvents(data);
+      console.log('EventsPage: Events fetched successfully.', data);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error('EventsPage: Error fetching events:', error);
     } finally {
-      setIsLoading(false); // Set loading to false when fetch completes (success or error)
+      setIsLoading(false);
+      console.log('EventsPage: Finished fetching events.');
     }
   };
 
   useEffect(() => {
+    console.log('EventsPage: useEffect - initial render or dependency change.');
     fetchEvents();
   }, []);
 
-  // Filter events based on activeSymposium state
-  const filteredEvents = events.filter(event => event.symposiumName === activeSymposium);
+  console.log('EventsPage: Current state - isLoading:', isLoading, 'authLoading:', authLoading, 'isLoggedIn:', isLoggedIn, 'user:', user);
+
+  const filteredEvents = events
+    .filter(event => event.symposiumName === activeSymposium)
+    .sort((a, b) => a.eventCategory.localeCompare(b.eventCategory));
 
   const handleSwitchToSignUp = () => {
     setIsLoginModalOpen(false);
@@ -53,19 +80,26 @@ const EventsPage: React.FC = () => {
     setIsLoginModalOpen(true);
   };
 
+  const handleRegisterClick = (event: Event) => {
+    if (!isLoggedIn) {
+      setIsLoginModalOpen(true);
+    } else {
+      // For now, assuming any logged-in user can register.
+      // In a real application, you might want to check for a "student" role or email domain.
+      console.log(`User ${user?.email} is logged in. Proceeding to registration for event ${event.eventName}`);
+      navigate('/registration', { state: { user, event } }); // Navigate to a registration page with user and event details
+    }
+  };
+
   return (
     <div 
       className="relative min-h-screen font-sans text-gray-200 overflow-x-hidden" 
-      style={{
-        fontFamily: "'Poppins', sans-serif",
-      }}
+      style={{ fontFamily: "'Poppins', sans-serif" }}
     >
       {/* Background Image Layer */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed"
-        style={{
-          backgroundImage: `url(${backgroundImage})`
-        }}
+        style={{ backgroundImage: `url(${backgroundImage})` }}
       ></div>
 
       {/* Overlay Layer */}
@@ -76,10 +110,10 @@ const EventsPage: React.FC = () => {
         setIsSignUpModalOpen={setIsSignUpModalOpen}
       />
 
-      {isLoading ? (
+      {isLoading || authLoading ? (
         <Loader />
       ) : (
-        <div className="container mx-auto p-4 pt-20 relative z-10"> {/* Added pt-20 and relative z-10 */}
+        <div className="container mx-auto p-4 pt-20 relative z-10">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">Events</h2>
 
           <div className="flex justify-center items-center gap-4 mb-8">
@@ -112,25 +146,37 @@ const EventsPage: React.FC = () => {
               {filteredEvents.map((event) => (
                 <div key={event.id} className="bg-gray-800/70 backdrop-blur-md p-6 rounded-lg border border-gray-700">
                   {event.posterUrl && (
-<img
-  src={`src/backend/${event.posterUrl}`}
-  alt={event.eventName}
-  className="w-full max-h-64 object-contain rounded-md mb-4"
-/>
-                )}
+                    <img
+                      src={`src/backend/${event.posterUrl}`}
+                      alt={event.eventName}
+                      className="w-full max-h-64 object-contain rounded-md mb-4"
+                    />
+                  )}
                   <h3 className="text-xl font-bold text-white mb-2">{event.eventName}</h3>
                   <p className="text-gray-400 mb-4">{event.symposiumName}</p>
                   <p className="text-gray-300">{event.eventDescription}</p>
-                  {event.registrationLink && (
-                    <a
-                      href={event.registrationLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 inline-block px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition"
-                    >
-                      Register Event
-                    </a>
-                  )}
+                  <div className="text-gray-400 text-xs space-y-1">
+                    <p><strong>Category:</strong> {event.eventCategory}</p>
+                    <p><strong>Rounds:</strong> {event.numberOfRounds}</p>
+                    <p><strong>Type:</strong> {event.teamOrIndividual}</p>
+                    <p><strong>Location:</strong> {event.location}</p>
+                    <p><strong>Registration Fees:</strong> ${event.registrationFees}</p>
+                    <p><strong>Coordinator:</strong> {event.coordinatorName} ({event.coordinatorContactNo})</p>
+                    <p><strong>Coordinator Email:</strong> {event.coordinatorMail}</p>
+                    <p><strong>Last Date for Registration:</strong> {new Date(event.lastDateForRegistration).toLocaleString()}</p>
+                    {event.rounds && event.rounds.map((round, index) => (
+                      <div key={index} className="ml-4 mt-2">
+                        <p><strong>Round {round.roundNumber}:</strong> {round.roundDetails}</p>
+                        <p>Date & Time: {new Date(round.roundDateTime).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => handleRegisterClick(event)}
+                    className="mt-4 inline-block px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition"
+                  >
+                    Register Event
+                  </button>
                 </div>
               ))}
             </div>
@@ -142,7 +188,7 @@ const EventsPage: React.FC = () => {
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
         onSwitchToSignUp={handleSwitchToSignUp} 
-        onSwitchToForgotPassword={() => {}} // Forgot password not implemented on EventsPage
+        onSwitchToForgotPassword={() => {}}
       />
       <SignUpPage 
         isOpen={isSignUpModalOpen} 

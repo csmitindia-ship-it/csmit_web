@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 
 module.exports = function(db, transporter) {
   const otpStore = {};
@@ -55,7 +56,8 @@ module.exports = function(db, transporter) {
     }
 
     try {
-      await db.execute('UPDATE users SET password = ? WHERE email = ?', [newPassword, email]);
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await db.execute('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
       res.json({ message: "Password reset successfully" });
     } catch (error) {
       console.error("Error resetting password:", error);
@@ -79,7 +81,9 @@ module.exports = function(db, transporter) {
 
       const user = rows[0];
 
-      if (user.password !== password) {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
         return res.status(401).json({ message: 'Invalid credentials.' });
       }
 
@@ -111,9 +115,10 @@ module.exports = function(db, transporter) {
     }
 
     try {
+      const hashedPassword = await bcrypt.hash(password, 10);
       const [result] = await db.execute(
         'INSERT INTO users (fullName, email, password, dob, mobile, college, department, yearOfPassing, state, district) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [fullName, email, password, dob, mobile, college, department, yearOfPassing, state, district]
+        [fullName, email, hashedPassword, dob, mobile, college, department, yearOfPassing, state, district]
       );
       res.status(201).json({ message: 'User created successfully', userId: result.insertId });
     } catch (error) {

@@ -21,7 +21,12 @@ if (!fs.existsSync(pdfDir)){
     fs.mkdirSync(pdfDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
+const eventPosterDir = path.join(__dirname, 'uploads/event_posters');
+if (!fs.existsSync(eventPosterDir)){
+    fs.mkdirSync(eventPosterDir, { recursive: true });
+}
+
+const pdfStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, pdfDir);
   },
@@ -30,7 +35,18 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
+const eventPosterStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, eventPosterDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const uploadPdf = multer({ storage: pdfStorage, limits: { fileSize: 1 * 1024 * 1024 } });
+const uploadEventPoster = multer({ storage: eventPosterStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // Increased limit for posters to 5MB
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Database Connection ---
@@ -85,26 +101,76 @@ async function createTablesIfNotExists() {
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
-  const createEventsTableQuery = `
-    CREATE TABLE IF NOT EXISTS events (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      symposiumName VARCHAR(255) NOT NULL,
-      eventName VARCHAR(255) NOT NULL,
-      eventDescription TEXT,
-      eventDate DATETIME,
-      registrationLimit INT,
-      registrationFees INT,
-      posterUrl VARCHAR(255) DEFAULT NULL, -- Added posterUrl column
-      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  const createEnigmaEventsTableQuery = `
+    CREATE TABLE IF NOT EXISTS enigma_events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        eventName VARCHAR(255) NOT NULL,
+        eventCategory VARCHAR(255) NOT NULL,
+        eventDescription TEXT NOT NULL,
+        numberOfRounds INT NOT NULL,
+        teamOrIndividual ENUM('Team', 'Individual') NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        registrationFees INT NOT NULL,
+        coordinatorName VARCHAR(255) NOT NULL,
+        coordinatorContactNo VARCHAR(20) NOT NULL,
+        coordinatorMail VARCHAR(255) NOT NULL,
+        lastDateForRegistration DATETIME NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
+  const createCarteBlancheEventsTableQuery = `
+    CREATE TABLE IF NOT EXISTS carte_blanche_events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        eventName VARCHAR(255) NOT NULL,
+        eventCategory VARCHAR(255) NOT NULL,
+        eventDescription TEXT NOT NULL,
+        numberOfRounds INT NOT NULL,
+        teamOrIndividual ENUM('Team', 'Individual') NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        registrationFees INT NOT NULL,
+        coordinatorName VARCHAR(255) NOT NULL,
+        coordinatorContactNo VARCHAR(20) NOT NULL,
+        coordinatorMail VARCHAR(255) NOT NULL,
+        lastDateForRegistration DATETIME NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+  const createEnigmaRoundsTableQuery = `
+    CREATE TABLE IF NOT EXISTS enigma_rounds (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        eventId INT NOT NULL,
+        roundNumber INT NOT NULL,
+        roundDetails TEXT NOT NULL,
+        roundDateTime DATETIME NOT NULL,
+        FOREIGN KEY (eventId) REFERENCES enigma_events(id) ON DELETE CASCADE
+    );
+  `;
+  const createCarteBlancheRoundsTableQuery = `
+    CREATE TABLE IF NOT EXISTS carte_blanche_rounds (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        eventId INT NOT NULL,
+        roundNumber INT NOT NULL,
+        roundDetails TEXT NOT NULL,
+        roundDateTime DATETIME NOT NULL,
+        FOREIGN KEY (eventId) REFERENCES carte_blanche_events(id) ON DELETE CASCADE
+    );
+  `;
+
   try {
     await db.execute(createUserTableQuery);
     console.log('Users table is ready.');
     await db.execute(createExperienceTableQuery);
     console.log('Experiences table is ready.');
-    await db.execute(createEventsTableQuery);
-    console.log('Events table is ready.');
+    await db.execute('DROP TABLE IF EXISTS events;');
+    console.log('Old events table dropped.');
+    await db.execute(createEnigmaEventsTableQuery);
+    console.log('Enigma events table is ready.');
+    await db.execute(createCarteBlancheEventsTableQuery);
+    console.log('Carte Blanche events table is ready.');
+    await db.execute(createEnigmaRoundsTableQuery);
+    console.log('Enigma rounds table is ready.');
+    await db.execute(createCarteBlancheRoundsTableQuery);
+    console.log('Carte Blanche rounds table is ready.');
   } catch (error) {
     console.error('Error creating tables:', error);
     process.exit(1);
@@ -125,8 +191,8 @@ async function startServer() {
 
   // --- Routers ---
   const authRouter = require('./auth.cjs')(db, transporter);
-  const eventsRouter = require('./events.cjs')(db);
-  const placementsRouter = require('./placements.cjs')(db, upload);
+  const eventsRouter = require('./events.cjs')(db, uploadEventPoster, eventPosterDir);
+  const placementsRouter = require('./placements.cjs')(db, uploadPdf);
 
   app.use('/auth', authRouter);
   app.use('/events', eventsRouter);

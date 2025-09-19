@@ -16,7 +16,8 @@ import LoginWrapper from "./Login_Sign/LoginWrapper"; // Import LoginWrapper
 import SignUpPage from "./Login_Sign/SignUpPage"; // Import SignUpPage
 import ForgotPassword from "./Login_Sign/Forgot_Pass"; // Import ForgotPassword
 import EventsPage from "./pages/EventsPage.tsx";
-import Dashboard from "./Dashboard.tsx";
+import RegistrationPage from "./pages/RegistrationPage.tsx";
+
 import ProtectedRoute from "./ProtectedRoute.tsx";
 import UnprotectedRoute from "./UnprotectedRoute.tsx";
 
@@ -42,14 +43,13 @@ if (rootElement) {
               <Route path="/login" element={<LoginWrapper />} />
               <Route path="/signup" element={<SignUpPage isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />} />
               <Route path="/forgot-password" element={<ForgotPassword isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />} />
-              <Route path="/" element={<App />} />
             </Route>
+            <Route path="/" element={<App />} />
 
             <Route path="/events" element={<EventsPage />} />
+            <Route path="/registration" element={<RegistrationPage />} />
             
-            <Route path="/dashboard" element={<ProtectedRoute />}>
-              <Route index element={<Dashboard />} />
-            </Route>
+            
           </Routes>
         </BrowserRouter>
       </AuthProvider>

@@ -1,115 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Header from '../ui/Header'; // Import the Header component
+
 import Loader from '../components/Loader'; // Import Loader component
+
+interface Round {
+  roundNumber: number;
+  roundDetails: string;
+  roundDateTime: string;
+}
 
 interface Event {
   id: number;
   eventName: string;
-  eventDescription: string;
   eventCategory: string;
-  eventOrganizer: string;
-  startDate: string;
-  endDate: string;
-  timeZone: string;
-  isRecurring: boolean;
-  recurringInfo?: string;
-  physicalAddress?: string;
-  onlineLink?: string;
-  registrationLink?: string;
-  registrationDeadline: string;
-  participationFee: number;
-  registrationFees?: number;
-  eligibilityCriteria?: string;
-  maxParticipants?: number;
-  coordinatorEmail: string;
-  coordinatorPhone?: string;
-  supportContact?: string;
-  agenda?: string;
-  speakers?: string;
-  documents?: string;
-  media?: string;
-  eventType: 'Individual' | 'Team';
-  teamSize?: number;
+  eventDescription: string;
+  numberOfRounds: number;
+  teamOrIndividual: 'Team' | 'Individual';
+  location: string;
+  registrationFees: number;
+  coordinatorName: string;
+  coordinatorContactNo: string;
+  coordinatorMail: string;
+  lastDateForRegistration: string;
   symposiumName: 'Enigma' | 'Carteblanche';
+  rounds?: Round[]; // Optional, as it will be fetched separately
   posterUrl?: string; // Added for event poster
 }
-
-const EventCountdown: React.FC<{ eventDate: string }> = ({ eventDate }) => {
-  const calculateTimeLeft = () => {
-    const difference = +new Date(eventDate) - +new Date();
-    let timeLeft: { [key: string]: number } = {};
-
-    if (difference > 0) {
-      timeLeft = {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
-      };
-    }
-
-    return timeLeft;
-  };
-
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTimeLeft(calculateTimeLeft());
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  });
-
-  const timerComponents: JSX.Element[] = [];
-
-  Object.keys(timeLeft).forEach((interval) => {
-    if (!timeLeft[interval]) {
-      return;
-    }
-
-    timerComponents.push(
-      <span key={interval}>
-        {timeLeft[interval]} {interval}{" "}
-      </span>
-    );
-  });
-
-  return (
-    <div className="text-yellow-400 font-bold">
-      {timerComponents.length ? timerComponents : <span>Event has passed!</span>}
-    </div>
-  );
-};
-
 
 const AdminEventsDisplayPage: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [activeSymposium, setActiveSymposium] = useState<'Enigma' | 'Carteblanche'>('Enigma');
   const [showMenuForEventId, setShowMenuForEventId] = useState<number | null>(null);
-  const [selectedEventIdForPoster, setSelectedEventIdForPoster] = useState<number | null>(null);
+  const [selectedEventForPoster, setSelectedEventForPoster] = useState<{ id: number; symposiumName: 'Enigma' | 'Carteblanche' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // State for login modal
-  const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false); // State for signup modal
+  
   const [isLoading, setIsLoading] = useState(true); // Loading state
 
   const fetchEvents = async () => {
     setIsLoading(true); // Set loading to true when fetch starts
-    const dataPromise = fetch('http://localhost:5001/events')
-      .then(res => res.json())
-      .then(data => {
-        setEvents(data);
-        return data; // Pass data to the next promise
-      })
-      .catch(err => {
-        console.error('Error fetching events:', err);
-        return []; // Return empty array on error to prevent breaking Promise.all
-      });
-
-    const timerPromise = new Promise(resolve => setTimeout(resolve, 3000)); // 3-second delay
-
-    await Promise.all([dataPromise, timerPromise]);
-    setIsLoading(false); // Set loading to false after both promises resolve
+    try {
+      const response = await fetch('http://localhost:5001/events');
+      const data = await response.json();
+      setEvents(data);
+    } catch (err) {
+      console.error('Error fetching events:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -118,20 +54,21 @@ const AdminEventsDisplayPage: React.FC = () => {
 
   const filteredEvents = events.filter(event => event.symposiumName === activeSymposium);
 
-  const handleAddPosterClick = (eventId: number) => {
-    setSelectedEventIdForPoster(eventId);
+  const handleAddPosterClick = (eventId: number, symposiumName: 'Enigma' | 'Carteblanche') => {
+    setSelectedEventForPoster({ id: eventId, symposiumName });
     setShowMenuForEventId(null); // Close the dropdown menu
     fileInputRef.current?.click(); // Directly trigger the file input
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0] && selectedEventIdForPoster) {
+    if (event.target.files && event.target.files[0] && selectedEventForPoster) {
       const file = event.target.files[0];
       const formData = new FormData();
       formData.append('poster', file);
+      formData.append('symposiumName', selectedEventForPoster.symposiumName); // Add symposiumName
 
       try {
-        const response = await fetch(`http://localhost:5001/events/${selectedEventIdForPoster}/poster`, {
+        const response = await fetch(`http://localhost:5001/events/${selectedEventForPoster.id}/poster`, {
           method: 'POST',
           body: formData,
         });
@@ -145,7 +82,7 @@ const AdminEventsDisplayPage: React.FC = () => {
         console.error('Error uploading poster:', error);
         alert('Error uploading poster.');
       }
-      setSelectedEventIdForPoster(null);
+      setSelectedEventForPoster(null);
       // Clear the file input to allow re-uploading the same file if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -153,10 +90,12 @@ const AdminEventsDisplayPage: React.FC = () => {
     }
   };
 
-  const handleRemovePoster = async (eventId: number) => {
+  const handleRemovePoster = async (eventId: number, symposiumName: 'Enigma' | 'Carteblanche') => {
     try {
       const response = await fetch(`http://localhost:5001/events/${eventId}/poster`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symposiumName }),
       });
       if (response.ok) {
         alert('Poster removed successfully!');
@@ -171,12 +110,28 @@ const AdminEventsDisplayPage: React.FC = () => {
     setShowMenuForEventId(null); // Close the dropdown menu
   };
 
+  const handleDeleteEvent = async (eventId: number, symposiumName: 'Enigma' | 'Carteblanche') => {
+    try {
+      const response = await fetch(`http://localhost:5001/events/${eventId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symposiumName }),
+      });
+      if (response.ok) {
+        alert('Event deleted successfully!');
+        fetchEvents();
+      } else {
+        alert('Failed to delete event.');
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      alert('Error deleting event.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <Header
-        setIsLoginModalOpen={setIsLoginModalOpen}
-        setIsSignUpModalOpen={setIsSignUpModalOpen}
-      />
+      
 
       {isLoading ? (
         <Loader />
@@ -223,16 +178,22 @@ const AdminEventsDisplayPage: React.FC = () => {
                   {showMenuForEventId === event.id && (
                     <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-10">
                       <button
-                        onClick={() => handleAddPosterClick(event.id)}
+                        onClick={() => handleAddPosterClick(event.id, event.symposiumName)}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                       >
                         Add Poster
                       </button>
                       <button
-                        onClick={() => handleRemovePoster(event.id)}
+                        onClick={() => handleRemovePoster(event.id, event.symposiumName)}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                       >
                         Remove Poster
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEvent(event.id, event.symposiumName)}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                      >
+                        Delete Event
                       </button>
                     </div>
                   )}
@@ -246,15 +207,19 @@ const AdminEventsDisplayPage: React.FC = () => {
                 <p className="text-gray-300 text-sm mb-3">{event.eventDescription}</p>
                 <div className="text-gray-400 text-xs space-y-1">
                   <p><strong>Category:</strong> {event.eventCategory}</p>
-                  <p><strong>Organizer:</strong> {event.eventOrganizer}</p>
-                  <p><strong>Date:</strong> {new Date(event.startDate).toLocaleString()}</p>
-                  <p><strong>Registration Deadline:</strong> {new Date(event.registrationDeadline).toLocaleString()}</p>
-                  <p><strong>Fee:</strong> ${event.participationFee}</p>
-                  <p><strong>Type:</strong> {event.eventType}</p>
-                  {event.eventType === 'Team' && <p><strong>Team Size:</strong> {event.teamSize}</p>}
-                </div>
-                <div className="mt-4">
-                  <EventCountdown eventDate={event.startDate} />
+                  <p><strong>Rounds:</strong> {event.numberOfRounds}</p>
+                  <p><strong>Type:</strong> {event.teamOrIndividual}</p>
+                  <p><strong>Location:</strong> {event.location}</p>
+                  <p><strong>Registration Fees:</strong> ${event.registrationFees}</p>
+                  <p><strong>Coordinator:</strong> {event.coordinatorName} ({event.coordinatorContactNo})</p>
+                  <p><strong>Coordinator Email:</strong> {event.coordinatorMail}</p>
+                  <p><strong>Last Date for Registration:</strong> {new Date(event.lastDateForRegistration).toLocaleString()}</p>
+                  {event.rounds && event.rounds.map((round, index) => (
+                    <div key={index} className="ml-4 mt-2">
+                      <p><strong>Round {round.roundNumber}:</strong> {round.roundDetails}</p>
+                      <p>Date & Time: {new Date(round.roundDateTime).toLocaleString()}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

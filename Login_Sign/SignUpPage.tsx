@@ -51,7 +51,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5001/signup', {
+      const response = await fetch('http://localhost:5001/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
       onClick={onClose} // Close modal when clicking outside
     >
       <div 
-        className="relative w-full max-w-md bg-gray-900/80 border border-purple-500/30 rounded-2xl p-8 shadow-2xl shadow-purple-500/20 overflow-y-auto max-h-[90vh] z-10"
+        className="relative w-full max-w-2xl bg-gray-900/80 border border-purple-500/30 rounded-2xl p-8 shadow-2xl shadow-purple-500/20 overflow-y-auto max-h-[90vh] z-10"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
       >
         <button 
@@ -136,27 +136,27 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Date of Birth</label>
-              <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Mobile Number</label>
-              <input type="tel" name="mobile" value={formData.mobile} onChange={handleChange} placeholder="+91..." className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="tel" name="mobile" value={formData.mobile} onChange={handleChange} placeholder="+91..." className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" required />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">College Name</label>
-            <input type="text" name="college" value={formData.college} onChange={handleChange} placeholder="Your college" className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            <input type="text" name="college" value={formData.college} onChange={handleChange} placeholder="Your college" className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Department</label>
-              <select name="department" value={formData.department} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <select name="department" value={formData.department} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500" required>
                 {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Year of Passing</label>
-              <select name="yearOfPassing" value={formData.yearOfPassing} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <select name="yearOfPassing" value={formData.yearOfPassing} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500" required>
                 {years.map(year => <option key={year} value={year}>{year}</option>)}
               </select>
             </div>
@@ -164,13 +164,13 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">State</label>
-              <select name="state" value={formData.state} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <select name="state" value={formData.state} onChange={handleChange} className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500" required>
                 {states.map(state => <option key={state} value={state}>{state}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">District</label>
-              <input type="text" name="district" value={formData.district} onChange={handleChange} placeholder="Your district" className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              <input type="text" name="district" value={formData.district} onChange={handleChange} placeholder="Your district" className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" required />
             </div>
           </div>
 

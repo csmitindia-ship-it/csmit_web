@@ -1,9 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
+const multer = require('multer');
 
 module.exports = function(db, upload) {
-  router.post('/submit-experience', upload.single('pdf'), async (req, res) => {
+  const handleUpload = (req, res, next) => {
+    upload.single('pdf')(req, res, function (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ message: 'File size should not be more than 1MB.' });
+        }
+      }
+      next();
+    });
+  };
+
+  router.post('/submit-experience', handleUpload, async (req, res) => {
     const { name, email, type, year, company, linkedin } = req.body;
     const pdfPath = req.file ? req.file.path : null;
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ThemedModal from '../components/ThemedModal'; // Adjust path as needed
+import Loader from '../components/Loader'; // Import Loader component
 
 interface Experience {
   id: number;
@@ -20,15 +21,20 @@ const ApprovedExperiencesPage: React.FC = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [modalOnConfirm, setModalOnConfirm] = useState<(() => void) | undefined>(undefined);
   const [showConfirmButton, setShowConfirmButton] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Loading state
 
-  const fetchExperiences = () => {
-    fetch('http://localhost:5001/experiences') // Fetch all experiences
-      .then(res => res.json())
-      .then(data => {
-        const approved = data.filter((exp: Experience) => exp.status === 'approved');
-        setApprovedExperiences(approved);
-      })
-      .catch(err => console.error('Error fetching experiences:', err));
+  const fetchExperiences = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5001/experiences');
+      const data = await response.json();
+      const approved = data.filter((exp: Experience) => exp.status === 'approved');
+      setApprovedExperiences(approved);
+    } catch (err) {
+      console.error('Error fetching experiences:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -80,37 +86,43 @@ const ApprovedExperiencesPage: React.FC = () => {
 
   return (
     <>
-      <h1 className="text-4xl md:text-5xl font-bold text-white mb-12 text-center">Manage Approved Experiences</h1>
-      
-      <div className="space-y-6">
-        {approvedExperiences.length > 0 ? (
-          approvedExperiences.map(exp => (
-            <div key={exp.id} className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-6 rounded-lg transform transition-transform hover:-translate-y-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => handleDeleteExperience(exp.id)}
-                    className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Delete
-                  </button>
-                  <div>
-                    <p><strong className="font-semibold text-purple-400">Name:</strong> {exp.name}</p>
-                    <p><strong className="font-semibold text-purple-400">Company:</strong> {exp.company}</p>
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-12 text-center">Manage Approved Experiences</h1>
+          
+          <div className="space-y-6">
+            {approvedExperiences.length > 0 ? (
+              approvedExperiences.map(exp => (
+                <div key={exp.id} className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-6 rounded-lg transform transition-transform hover:-translate-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handleDeleteExperience(exp.id)}
+                        className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Delete
+                      </button>
+                      <div>
+                        <p><strong className="font-semibold text-purple-400">Name:</strong> {exp.name}</p>
+                        <p><strong className="font-semibold text-purple-400">Company:</strong> {exp.company}</p>
+                      </div>
+                    </div>
+                    <a href={getPdfUrl(exp.pdf_path)} target="_blank" rel="noopener noreferrer" className="w-full md:w-auto text-center px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
+                      View Resume
+                    </a>
                   </div>
                 </div>
-                <a href={getPdfUrl(exp.pdf_path)} target="_blank" rel="noopener noreferrer" className="w-full md:w-auto text-center px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
-                  View Resume
-                </a>
+              ))
+            ) : (
+              <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg text-center">
+                <p className="text-lg text-gray-300">No approved experiences to display.</p>
               </div>
-            </div>
-          ))
-        ) : (
-          <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg text-center">
-            <p className="text-lg text-gray-300">No approved experiences to display.</p>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
       <ThemedModal // Render the modal component
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

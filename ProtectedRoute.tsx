@@ -10,7 +10,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ role }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return null; // Or a loading spinner
+    return <div>Loading...</div>; // Or a loading spinner
   }
 
   if (!user) {

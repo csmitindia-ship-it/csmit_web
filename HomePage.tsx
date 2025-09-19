@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import Header from "./ui/Header";
 import backgroundImage from './Login_Sign/photo.jpeg';
 import LoginPage from './Login_Sign/LoginPage';
@@ -33,8 +34,9 @@ import Indian from './Photos/Indian.png';
 import Lic from './Photos/Lic.png';
 import Ananya from './Photos/Ananya.jpg';
 import abinesh from './Photos/abinesh.jpeg';
-import vijayashree from './Photos/vijayashree.jpeg'
-import aravinth from './Photos/aravinth.jpeg'
+import vijayashree from './Photos/vijayashree.jpeg';
+import aravinth from './Photos/aravinth.jpeg';
+
 // --- Data for different sections ---
 
 const featuredAlumni = [
@@ -99,6 +101,10 @@ export default function HomePage() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  
 
   useEffect(() => {
     window.history.scrollRestoration = 'manual';
@@ -134,6 +140,10 @@ export default function HomePage() {
     setIsForgotPasswordModalOpen(true);
   };
 
+  
+
+  
+
   return (
     <>
       <style>{`
@@ -151,14 +161,14 @@ export default function HomePage() {
       `}</style>
     
       <div 
-        className="relative min-h-screen font-sans text-gray-200 overflow-x-hidden" // Removed bg-cover bg-center bg-fixed and backgroundImage from here
+        className="relative min-h-screen font-sans text-gray-200 overflow-x-hidden"
         style={{
           fontFamily: "'Poppins', sans-serif",
         }}
       >
         {/* Background Image Layer */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-fixed" // Added background styles here
+          className="absolute inset-0 bg-cover bg-center bg-fixed"
           style={{
             backgroundImage: `url(${backgroundImage})`
           }}
@@ -168,7 +178,6 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-black/70 z-0"></div>
 
         <Header setIsLoginModalOpen={setIsLoginModalOpen} setIsSignUpModalOpen={setIsSignUpModalOpen}  />
-
 
         <main className="relative z-10 pt-16">
             <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center px-4 relative pt-20">
@@ -264,18 +273,24 @@ export default function HomePage() {
                 </div>
             </section>
 
-            <section id="events" className="py-20 px-4 sm:px-6 lg:px-8">
+                        <section id="events" className="py-20 px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-bold text-center mb-12 text-white">Tech Fests</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                     <div className="bg-gray-900/70 backdrop-blur-md border border-gray-700 p-8 rounded-lg">
                         <h3 className="text-2xl font-bold text-white mb-3">ENIGMA</h3>
                         <p className="text-gray-300 mb-4">A premier technical symposium featuring cutting-edge competitions in AI, ML, and emerging technologies.</p>
-                        <Link to="/events?symposium=Enigma" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
+                        <div className="flex gap-4 mt-4">
+                            <Link to="/events?symposium=Enigma" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
+                            
+                        </div>
                     </div>
                     <div className="bg-gray-900/70 backdrop-blur-md border border-gray-700 p-8 rounded-lg">
                         <h3 className="text-2xl font-bold text-white mb-3">CARTE BLANCHE</h3>
                         <p className="text-gray-300 mb-4">An innovation fest celebrating creativity in technology with workshops, seminars, and competitions.</p>
-                        <Link to="/events?symposium=Carteblanche" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
+                        <div className="flex gap-4 mt-4">
+                            <Link to="/events?symposium=Carteblanche" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
+                            
+                        </div>
                     </div>
                 </div>
             </section>

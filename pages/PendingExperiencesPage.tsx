@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Loader from '../components/Loader'; // Import Loader component
 import ThemedModal from '../components/ThemedModal'; // Adjust path as needed
 
 interface Experience {
@@ -20,15 +21,20 @@ const PendingExperiencesPage: React.FC = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [modalOnConfirm, setModalOnConfirm] = useState<(() => void) | undefined>(undefined);
   const [showConfirmButton, setShowConfirmButton] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Loading state
 
-  const fetchExperiences = () => {
-    fetch('http://localhost:5001/experiences') // Fetch all experiences
-      .then(res => res.json())
-      .then(data => {
-        const pending = data.filter((exp: Experience) => exp.status === 'pending');
-        setPendingExperiences(pending);
-      })
-      .catch(err => console.error('Error fetching experiences:', err));
+  const fetchExperiences = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5001/experiences');
+      const data = await response.json();
+      const pending = data.filter((exp: Experience) => exp.status === 'pending');
+      setPendingExperiences(pending);
+    } catch (err) {
+      console.error('Error fetching experiences:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -98,48 +104,54 @@ const PendingExperiencesPage: React.FC = () => {
 
   return (
     <>
-      <h1 className="text-4xl md:text-5xl font-bold text-white mb-12 text-center">Review Pending Experiences</h1>
-      
-      <div className="space-y-6">
-        {pendingExperiences.length > 0 ? (
-          pendingExperiences.map(exp => (
-            <div key={exp.id} className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-6 rounded-lg transform transition-transform hover:-translate-y-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => handleDeleteExperience(exp.id)}
-                    className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Delete
-                  </button>
-                  <div>
-                    <p><strong className="font-semibold text-purple-400">Name:</strong> {exp.name}</p>
-                    <p><strong className="font-semibold text-purple-400">Company:</strong> {exp.company}</p>
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-12 text-center">Review Pending Experiences</h1>
+          
+          <div className="space-y-6">
+            {pendingExperiences.length > 0 ? (
+              pendingExperiences.map(exp => (
+                <div key={exp.id} className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-6 rounded-lg transform transition-transform hover:-translate-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handleDeleteExperience(exp.id)}
+                        className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Delete
+                      </button>
+                      <div>
+                        <p><strong className="font-semibold text-purple-400">Name:</strong> {exp.name}</p>
+                        <p><strong className="font-semibold text-purple-400">Company:</strong> {exp.company}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleStatusUpdate(exp.id, 'approved')}
+                        className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleStatusUpdate(exp.id, 'rejected')}
+                        className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleStatusUpdate(exp.id, 'approved')}
-                    className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleStatusUpdate(exp.id, 'rejected')}
-                    className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Reject
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg text-center">
+                <p className="text-lg text-gray-300">No pending experiences to review.</p>
               </div>
-            </div>
-          ))
-        ) : (
-          <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg text-center">
-            <p className="text-lg text-gray-300">No pending experiences to review.</p>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
       <ThemedModal // Render the modal component
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

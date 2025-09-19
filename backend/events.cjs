@@ -1,42 +1,69 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure the uploads directory exists
-const uploadDir = path.join(__dirname, 'uploads', 'event_posters');
-console.log('Multer upload directory:', uploadDir);
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer storage configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
-
-const upload = multer({ storage: storage });
-
-module.exports = function(db) {
+module.exports = function(db, uploadEventPoster, eventPosterDir) {
   router.post('/', async (req, res) => {
-    const { symposiumName, eventName, eventDescription } = req.body;
+    const {
+      symposiumName,
+      eventName,
+      eventCategory,
+      eventDescription,
+      numberOfRounds,
+      teamOrIndividual,
+      location,
+      registrationFees,
+      coordinatorName,
+      coordinatorContactNo,
+      coordinatorMail,
+      lastDateForRegistration,
+      rounds,
+    } = req.body;
 
-    if (!symposiumName || !eventName) {
-      return res.status(400).json({ message: 'Symposium name and event name are required.' });
+    if (!symposiumName || !eventName || !eventCategory || !eventDescription ||
+        numberOfRounds === undefined || !teamOrIndividual || !location ||
+        registrationFees === undefined || !coordinatorName || !coordinatorContactNo ||
+        !coordinatorMail || !lastDateForRegistration || !rounds) {
+      return res.status(400).json({ message: 'Missing required event fields.' });
     }
 
     try {
-      await db.execute(
-        'INSERT INTO events (symposiumName, eventName, eventDescription) VALUES (?, ?, ?)',
-        [symposiumName, eventName, eventDescription]
+      let eventTable;
+      let roundsTable;
+      if (symposiumName === 'Enigma') {
+        eventTable = 'enigma_events';
+        roundsTable = 'enigma_rounds';
+      } else if (symposiumName === 'Carteblanche') {
+        eventTable = 'carte_blanche_events';
+        roundsTable = 'carte_blanche_rounds';
+      } else {
+        return res.status(400).json({ message: 'Invalid symposium name.' });
+      }
+
+      const [eventResult] = await db.execute(
+        `INSERT INTO ${eventTable} (
+          eventName, eventCategory, eventDescription, numberOfRounds, teamOrIndividual,
+          location, registrationFees, coordinatorName, coordinatorContactNo, coordinatorMail,
+          lastDateForRegistration
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          eventName, eventCategory, eventDescription, numberOfRounds, teamOrIndividual,
+          location, registrationFees, coordinatorName, coordinatorContactNo, coordinatorMail,
+          lastDateForRegistration,
+        ]
       );
-      res.status(201).json({ message: 'Event added successfully.' });
+
+      const eventId = eventResult.insertId;
+
+      for (const round of rounds) {
+        await db.execute(
+          `INSERT INTO ${roundsTable} (eventId, roundNumber, roundDetails, roundDateTime) VALUES (?, ?, ?, ?)`,
+          [eventId, round.roundNumber, round.roundDetails, round.roundDateTime]
+        );
+      }
+
+      res.status(201).json({ message: 'Event added successfully.', eventId });
     } catch (error) {
       console.error('Error adding event:', error);
       res.status(500).json({ message: 'Failed to add event.' });
@@ -45,9 +72,22 @@ module.exports = function(db) {
 
   router.get('/', async (req, res) => {
     try {
-      const [rows] = await db.execute('SELECT * FROM events');
-      console.log('Fetched events:', rows);
-      res.json(rows);
+      const [enigmaEvents] = await db.execute('SELECT id, eventName, eventCategory, eventDescription, numberOfRounds, teamOrIndividual, location, registrationFees, coordinatorName, coordinatorContactNo, coordinatorMail, lastDateForRegistration, posterUrl, createdAt FROM enigma_events');
+      const [carteBlancheEvents] = await db.execute('SELECT id, eventName, eventCategory, eventDescription, numberOfRounds, teamOrIndividual, location, registrationFees, coordinatorName, coordinatorContactNo, coordinatorMail, lastDateForRegistration, posterUrl, createdAt FROM carte_blanche_events');
+
+      const allEvents = [];
+
+      for (const event of enigmaEvents) {
+        const [rounds] = await db.execute('SELECT roundNumber, roundDetails, roundDateTime FROM enigma_rounds WHERE eventId = ?', [event.id]);
+        allEvents.push({ ...event, symposiumName: 'Enigma', rounds });
+      }
+
+      for (const event of carteBlancheEvents) {
+        const [rounds] = await db.execute('SELECT roundNumber, roundDetails, roundDateTime FROM carte_blanche_rounds WHERE eventId = ?', [event.id]);
+        allEvents.push({ ...event, symposiumName: 'Carteblanche', rounds });
+      }
+
+      res.json(allEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
       res.status(500).json({ message: 'Failed to fetch events.' });
@@ -56,17 +96,64 @@ module.exports = function(db) {
 
   router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const { eventName, eventDescription } = req.body;
+    const {
+      symposiumName,
+      eventName,
+      eventCategory,
+      eventDescription,
+      numberOfRounds,
+      teamOrIndividual,
+      location,
+      registrationFees,
+      coordinatorName,
+      coordinatorContactNo,
+      coordinatorMail,
+      lastDateForRegistration,
+      rounds,
+    } = req.body;
 
-    if (!eventName) {
-      return res.status(400).json({ message: 'Event name is required.' });
+    if (!symposiumName || !eventName || !eventCategory || !eventDescription ||
+        numberOfRounds === undefined || !teamOrIndividual || !location ||
+        registrationFees === undefined || !coordinatorName || !coordinatorContactNo ||
+        !coordinatorMail || !lastDateForRegistration || !rounds) {
+      return res.status(400).json({ message: 'Missing required event fields.' });
     }
 
     try {
+      let eventTable;
+      let roundsTable;
+      if (symposiumName === 'Enigma') {
+        eventTable = 'enigma_events';
+        roundsTable = 'enigma_rounds';
+      } else if (symposiumName === 'Carteblanche') {
+        eventTable = 'carte_blanche_events';
+        roundsTable = 'carte_blanche_rounds';
+      } else {
+        return res.status(400).json({ message: 'Invalid symposium name.' });
+      }
+
       await db.execute(
-        'UPDATE events SET eventName = ?, eventDescription = ? WHERE id = ?',
-        [eventName, eventDescription, id]
+        `UPDATE ${eventTable} SET
+          eventName = ?, eventCategory = ?, eventDescription = ?, numberOfRounds = ?, teamOrIndividual = ?,
+          location = ?, registrationFees = ?, coordinatorName = ?, coordinatorContactNo = ?, coordinatorMail = ?,
+          lastDateForRegistration = ?
+        WHERE id = ?`,
+        [
+          eventName, eventCategory, eventDescription, numberOfRounds, teamOrIndividual,
+          location, registrationFees, coordinatorName, coordinatorContactNo, coordinatorMail,
+          lastDateForRegistration, id,
+        ]
       );
+
+      // Delete existing rounds and insert new ones
+      await db.execute(`DELETE FROM ${roundsTable} WHERE eventId = ?`, [id]);
+      for (const round of rounds) {
+        await db.execute(
+          `INSERT INTO ${roundsTable} (eventId, roundNumber, roundDetails, roundDateTime) VALUES (?, ?, ?, ?)`,
+          [id, round.roundNumber, round.roundDetails, round.roundDateTime]
+        );
+      }
+
       res.json({ message: `Event ${id} has been updated.` });
     } catch (error) {
       console.error('Error updating event:', error);
@@ -75,8 +162,23 @@ module.exports = function(db) {
   });
 
   // Route to upload event poster
-  router.post('/:id/poster', upload.single('poster'), async (req, res) => {
+  router.post('/:id/poster', uploadEventPoster.single('poster'), async (req, res) => {
     const { id } = req.params;
+    const { symposiumName } = req.body; // Get symposiumName from body
+
+    if (!symposiumName) {
+      return res.status(400).json({ message: 'Symposium name is required.' });
+    }
+
+    let eventTable;
+    if (symposiumName === 'Enigma') {
+      eventTable = 'enigma_events';
+    } else if (symposiumName === 'Carteblanche') {
+      eventTable = 'carte_blanche_events';
+    } else {
+      return res.status(400).json({ message: 'Invalid symposium name.' });
+    }
+
     console.log('Received poster upload request for event ID:', id);
     console.log('req.file:', req.file);
 
@@ -90,7 +192,7 @@ module.exports = function(db) {
 
     try {
       await db.execute(
-        'UPDATE events SET posterUrl = ? WHERE id = ?',
+        `UPDATE ${eventTable} SET posterUrl = ? WHERE id = ?`,
         [posterUrl, id]
       );
       res.status(200).json({ message: 'Poster uploaded successfully.', posterUrl });
@@ -103,15 +205,29 @@ module.exports = function(db) {
   // Route to delete event poster
   router.delete('/:id/poster', async (req, res) => {
     const { id } = req.params;
+    const { symposiumName } = req.body; // Get symposiumName from body
+
+    if (!symposiumName) {
+      return res.status(400).json({ message: 'Symposium name is required.' });
+    }
+
+    let eventTable;
+    if (symposiumName === 'Enigma') {
+      eventTable = 'enigma_events';
+    } else if (symposiumName === 'Carteblanche') {
+      eventTable = 'carte_blanche_events';
+    } else {
+      return res.status(400).json({ message: 'Invalid symposium name.' });
+    }
 
     try {
-      const [rows] = await db.execute('SELECT posterUrl FROM events WHERE id = ?', [id]);
+      const [rows] = await db.execute(`SELECT posterUrl FROM ${eventTable} WHERE id = ?`, [id]);
       const event = rows[0];
 
       if (event && event.posterUrl) {
         // Extract just the filename from the full URL to get the local path
         const filename = path.basename(event.posterUrl);
-        const filePath = path.join(uploadDir, filename);
+        const filePath = path.join(eventPosterDir, filename);
 
         fs.unlink(filePath, (err) => {
           if (err) {
@@ -120,7 +236,7 @@ module.exports = function(db) {
         });
       }
 
-      await db.execute('UPDATE events SET posterUrl = NULL WHERE id = ?', [id]);
+      await db.execute(`UPDATE ${eventTable} SET posterUrl = NULL WHERE id = ?`, [id]);
       res.status(200).json({ message: 'Poster removed successfully.' });
     } catch (error) {
       console.error('Error removing poster:', error);
@@ -130,9 +246,30 @@ module.exports = function(db) {
 
   router.delete('/:id', async (req, res) => {
     const { id } = req.params;
+    const { symposiumName } = req.body; // Get symposiumName from body
+
+    if (!symposiumName) {
+      return res.status(400).json({ message: 'Symposium name is required.' });
+    }
+
+    let eventTable;
+    let roundsTable;
+    if (symposiumName === 'Enigma') {
+      eventTable = 'enigma_events';
+      roundsTable = 'enigma_rounds';
+    } else if (symposiumName === 'Carteblanche') {
+      eventTable = 'carte_blanche_events';
+      roundsTable = 'carte_blanche_rounds';
+    } else {
+      return res.status(400).json({ message: 'Invalid symposium name.' });
+    }
 
     try {
-      await db.execute('DELETE FROM events WHERE id = ?', [id]);
+      // Delete associated rounds first
+      await db.execute(`DELETE FROM ${roundsTable} WHERE eventId = ?`, [id]);
+
+      // Then delete the event
+      await db.execute(`DELETE FROM ${eventTable} WHERE id = ?`, [id]);
       res.json({ message: 'Event deleted successfully.' });
     } catch (error) {
       console.error('Error deleting event:', error);
