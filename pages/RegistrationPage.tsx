@@ -20,10 +20,15 @@ const RegistrationPage: React.FC = () => {
   const [event, setEvent] = useState<any>(null);
 
   useEffect(() => {
-    if (eventId) {
+    console.log('eventId:', eventId);
+    console.log('symposium:', symposium);
+    if (eventId && symposium) {
       fetch(`http://localhost:5001/events/${eventId}?symposium=${symposium}`)
         .then(res => res.json())
-        .then(data => setEvent(data));
+        .then(data => {
+          console.log('event data:', data);
+          setEvent(data);
+        });
     }
   }, [eventId, symposium]);
 
@@ -110,6 +115,7 @@ const RegistrationPage: React.FC = () => {
           </div>
           {event && (
             <>
+              {console.log('condition:', symposium === 'Enigma' && event.eventCategory === 'Workshop')}
               {symposium === 'Enigma' && event.eventCategory === 'Workshop' ? (
                 <WorkshopRegistrationForm 
                   eventName={event.eventName}

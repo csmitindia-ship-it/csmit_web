@@ -239,7 +239,7 @@ async function startServer() {
   app.use('/events', eventsRouter);
   app.use(placementsRouter);
   app.use('/admin/accounts', accountsRouter);
-  app.use('/register', registrationsRouter);
+  app.use('/registrations', registrationsRouter);
 
   // --- Start Server ---
   app.use((req, res, next) => {

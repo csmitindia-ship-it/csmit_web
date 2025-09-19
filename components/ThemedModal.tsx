@@ -21,7 +21,7 @@ const ThemedModal: React.FC<ThemedModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-      <div className="bg-gray-800 border border-purple-500 rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all duration-300 scale-100 opacity-100">
+      <div className="bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-2xl transform transition-all duration-300 scale-100 opacity-100">
         <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>
         {message && <p className="text-gray-300 mb-6">{message}</p>}
         {children}

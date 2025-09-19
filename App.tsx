@@ -1,6 +1,21 @@
 import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import HomePage from "./HomePage";
 import { useAuth } from "./context/AuthContext";
+import AdminPage from "./AdminPage.tsx";
+import PendingExperiencesPage from "./pages/PendingExperiencesPage.tsx";
+import ApprovedExperiencesPage from "./pages/ApprovedExperiencesPage.tsx";
+import ManageEventsPage from "./pages/ManageEventsPage.tsx";
+import AdminEventsDisplayPage from "./pages/AdminEventsDisplayPage.tsx";
+import AccountDetailsPage from "./pages/AccountDetailsPage.tsx";
+import PlacementsPage from "./placements/PlacementsPage";
+import LoginWrapper from "./Login_Sign/LoginWrapper";
+import SignUpPage from "./Login_Sign/SignUpPage";
+import ForgotPassword from "./Login_Sign/Forgot_Pass";
+import EventsPage from "./pages/EventsPage.tsx";
+import RegistrationPage from "./pages/RegistrationPage.tsx";
+import ProtectedRoute from "./ProtectedRoute.tsx";
+import UnprotectedRoute from "./UnprotectedRoute.tsx";
 
 export default function App() {
   const [showIntro, setShowIntro] = useState(sessionStorage.getItem('introSeen') !== 'true');
@@ -8,25 +23,10 @@ export default function App() {
   const [text, setText] = useState("");
   const { logout } = useAuth();
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      console.log('App: beforeunload event fired, logging out.');
-      logout();
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [logout]);
-
   const lines = [
     "Initializing... Starting Computer Society of MIT",
     "Loading Innovation Modules..."
   ];
-
-  
 
   useEffect(() => {
     if (showIntro && currentLine < lines.length) {
@@ -74,6 +74,30 @@ export default function App() {
   }
 
   return (
-    <HomePage />
+    <Routes>
+      <Route element={<ProtectedRoute role="admin" />}>
+        <Route path="/admin" element={<AdminPage />}>
+          <Route path="manage-events" element={<ManageEventsPage />} />
+          <Route path="pending-experiences" element={<PendingExperiencesPage />} />
+          <Route path="approved-experiences" element={<ApprovedExperiencesPage />} />
+          <Route path="events-display" element={<AdminEventsDisplayPage />} />
+          <Route path="account-details" element={<AccountDetailsPage />} />
+        </Route>
+      </Route>
+
+      <Route path="/placements" element={<PlacementsPage />} />
+      
+      <Route element={<UnprotectedRoute />}>
+        <Route path="/login" element={<LoginWrapper />} />
+        <Route path="/signup" element={<SignUpPage isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />} />
+        <Route path="/forgot-password" element={<ForgotPassword isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />} />
+      </Route>
+      <Route path="/" element={<HomePage />} />
+
+      <Route path="/events" element={<EventsPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/registration" element={<RegistrationPage />} />
+      </Route>
+    </Routes>
   );
 }

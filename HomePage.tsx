@@ -103,7 +103,6 @@ export default function HomePage() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
 
   
