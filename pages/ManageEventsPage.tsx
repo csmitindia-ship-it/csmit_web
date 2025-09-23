@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 // --- Data Interfaces ---
 type Round = {
@@ -524,7 +525,11 @@ const App: React.FC = () => {
                           >
                             Assign Account
                           </button>
-                          
+                          <Link to={`/admin/events/registrations/${event.id}`}>
+                            <button className="px-2 py-1 bg-yellow-600 rounded-md text-sm">
+                              View Registrations
+                            </button>
+                          </Link>
                         </div>
                       </div>
                       {event.assignedAccounts && event.assignedAccounts.length > 0 && (

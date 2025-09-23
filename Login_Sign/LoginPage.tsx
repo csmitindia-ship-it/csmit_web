@@ -32,7 +32,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (email === 'csmitindia@gmail.com' && password === 'Csmit@2025') {
-      login(email, 'admin'); // Call login from AuthContext
+      login(null, email, 'admin'); // Call login from AuthContext
       navigate('/admin'); // Navigate to admin page after login
       onClose();
     } else {
@@ -48,7 +48,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
         const data = await response.json();
 
         if (response.ok) {
-          login(data.user.email, 'student', data.user.fullName);
+          login(data.user.id, data.user.email, 'student', data.user.fullName);
           navigate('/');
           onClose();
         } else {

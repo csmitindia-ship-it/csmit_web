@@ -7,6 +7,8 @@ interface SignUpPageProps {
   onSwitchToLogin: () => void;
 }
 
+
+
 const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogin }) => {
   if (!isOpen) return null;
 
@@ -27,6 +29,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showOtherCollegeInput, setShowOtherCollegeInput] = useState(false); // New state variable
   const navigate = useNavigate();
 
   const states = [
@@ -49,6 +52,19 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const handleCollegeSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === 'Other') {
+      setFormData({ ...formData, college: '' }); // Clear college to allow user to type
+      setShowOtherCollegeInput(true);
+    } else {
+      setFormData({ ...formData, college: value });
+      setShowOtherCollegeInput(false);
+    }
+  };
+
+  const MIT_COLLEGE_NAME = "Madras Institute of Technology";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,7 +165,29 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">College Name</label>
-            <input type="text" name="college" value={formData.college} onChange={handleChange} placeholder="Your college" className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+            <select
+              name="collegeSelect"
+              value={formData.college === MIT_COLLEGE_NAME ? MIT_COLLEGE_NAME : (showOtherCollegeInput ? 'Other' : '')}
+              onChange={handleCollegeSelectChange}
+              className="w-full px-4 py-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              required
+            >
+              <option value="">Select your college</option>
+              <option value={MIT_COLLEGE_NAME}>{MIT_COLLEGE_NAME}</option>
+              <option value="Other">Other</option>
+            </select>
+
+            {showOtherCollegeInput && (
+              <input
+                type="text"
+                name="college"
+                value={formData.college}
+                onChange={handleChange}
+                placeholder="Enter your college name"
+                className="w-full px-4 py-2 mt-2 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
+              />
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

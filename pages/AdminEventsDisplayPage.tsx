@@ -32,6 +32,7 @@ const AdminEventsDisplayPage: React.FC = () => {
   const [showMenuForEventId, setShowMenuForEventId] = useState<number | null>(null);
   const [selectedEventForPoster, setSelectedEventForPoster] = useState<{ id: number; symposiumName: 'Enigma' | 'Carteblanche' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [registrationsVisibleForEventId, setRegistrationsVisibleForEventId] = useState<number | null>(null);
   
   const [isLoading, setIsLoading] = useState(true); // Loading state
 
@@ -129,6 +130,14 @@ const AdminEventsDisplayPage: React.FC = () => {
     }
   };
 
+  const toggleRegistrations = (eventId: number) => {
+    if (registrationsVisibleForEventId === eventId) {
+      setRegistrationsVisibleForEventId(null);
+    } else {
+      setRegistrationsVisibleForEventId(eventId);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       
@@ -194,6 +203,12 @@ const AdminEventsDisplayPage: React.FC = () => {
                       >
                         Delete Event
                       </button>
+                      <button
+                        onClick={() => toggleRegistrations(event.id)}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                      >
+                        {registrationsVisibleForEventId === event.id ? 'Hide Registrations' : 'View Registrations'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -220,6 +235,7 @@ const AdminEventsDisplayPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                
               </div>
             ))}
           </div>

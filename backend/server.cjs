@@ -202,6 +202,17 @@ async function createTablesIfNotExists() {
     );
   `;
 
+  const createCartTableQuery = `
+    CREATE TABLE IF NOT EXISTS cart (
+      cartId INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      eventId INT NOT NULL,
+      symposiumName VARCHAR(255) NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `;
+
   try {
     await db.execute(createUserTableQuery);
     console.log('Users table is ready.');
@@ -227,6 +238,8 @@ async function createTablesIfNotExists() {
     console.log('Registrations table is ready.');
     await db.execute(createEnigmaNonWorkshopRegistrationsTableQuery);
     console.log('Enigma non-workshop registrations table is ready.');
+    await db.execute(createCartTableQuery); // Added cart table creation
+    console.log('Cart table is ready.');
   } catch (error) {
     console.error('Error creating tables:', error);
     process.exit(1);
@@ -251,12 +264,14 @@ async function startServer() {
   const placementsRouter = require('./placements.cjs')(db, uploadPdf);
   const accountsRouter = require('./accounts.cjs')(db);
   const registrationsRouter = require('./registrations.cjs')(db);
+  const cartRouter = require('./cart.cjs')(db); // New: Cart Router
 
   app.use('/auth', authRouter);
   app.use('/events', eventsRouter);
   app.use(placementsRouter);
   app.use('/admin/accounts', accountsRouter);
   app.use('/registrations', registrationsRouter);
+  app.use('/cart', cartRouter); // New: Use Cart Router
 
   // --- Start Server ---
   app.use((req, res, next) => {

@@ -1,8 +1,8 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 interface AuthContextType {
-  user: { email: string; role: 'admin' | 'student' | null; name?: string } | null;
-  login: (email: string, role: 'admin' | 'student', name?: string) => void;
+  user: { id: number | null; email: string; role: 'admin' | 'student' | null; name?: string } | null;
+  login: (id: number | null, email: string, role: 'admin' | 'student', name?: string) => void;
   logout: () => void;
   loading: boolean;
   isLoggedIn: boolean;
@@ -11,7 +11,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ email: string; role: 'admin' | 'student' | null; name?: string } | null>(() => {
+  const [user, setUser] = useState<{ id: number | null; email: string; role: 'admin' | 'student' | null; name?: string } | null>(() => {
     // Initialize user from sessionStorage
     const storedUser = sessionStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
@@ -31,9 +31,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false); // Set loading to false after user is initialized/persisted
   }, [user]);
 
-  const login = (email: string, role: 'admin' | 'student', name?: string) => {
-    console.log('AuthContext: login function called with user:', { email, role, name });
-    setUser({ email, role, name });
+  const login = (id: number | null, email: string, role: 'admin' | 'student', name?: string) => {
+    console.log('AuthContext: login function called with user:', { id, email, role, name });
+    setUser({ id, email, role, name });
   };
 
   const logout = () => {

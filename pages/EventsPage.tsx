@@ -50,6 +50,8 @@ const EventsPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null); // New state for selected event
   const [isWorkshopModalOpen, setIsWorkshopModalOpen] = useState(false);
   const [selectedWorkshopEvent, setSelectedWorkshopEvent] = useState<Event | null>(null);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [isCartActionInProgress, setIsCartActionInProgress] = useState(false);
 
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -76,15 +78,32 @@ const EventsPage: React.FC = () => {
   };
 
   const fetchRegisteredEvents = async () => {
-    if (user) {
-      try {
-        const response = await fetch(`http://localhost:5001/registrations/${user.id}`);
-        const data = await response.json();
-        setRegisteredEvents(data.map((reg: any) => reg.eventId));
-        console.log('EventsPage: Registered events fetched:', data.map((reg: any) => reg.eventId));
-      } catch (error) {
-        console.error('Error fetching registered events:', error);
-      }
+    if (!user || !user.email) {
+      console.log('EventsPage: User or user.email is undefined, skipping fetchRegisteredEvents.', { user });
+      return;
+    }
+    console.log('EventsPage: Fetching registered events for user.email:', user.email);
+    try {
+      const response = await fetch(`http://localhost:5001/registrations/${user.email}`);
+      const data = await response.json();
+      console.log('EventsPage: Raw data from backend for registered events:', data);
+      setRegisteredEvents(data.map((reg: any) => reg.eventId));
+      console.log('EventsPage: Registered events fetched:', data.map((reg: any) => reg.eventId));
+    } catch (error) {
+      console.error('Error fetching registered events:', error);
+    }
+  };
+
+  const fetchCartItems = async () => {
+    if (!user || !user.email) {
+      return;
+    }
+    try {
+      const response = await fetch(`http://localhost:5001/cart/${user.email}`);
+      const data = await response.json();
+      setCartItems(data);
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
     }
   };
 
@@ -93,6 +112,7 @@ const EventsPage: React.FC = () => {
     fetchEvents();
     if (isLoggedIn) {
       fetchRegisteredEvents();
+      fetchCartItems();
     }
   }, [isLoggedIn, user]);
 
@@ -132,23 +152,121 @@ const EventsPage: React.FC = () => {
     setIsLoginModalOpen(true);
   };
 
-  const handleRegisterClick = async (event: Event) => {
+  const handleAddToCart = async (event: Event) => {
     if (!isLoggedIn) {
       setIsLoginModalOpen(true);
-    } else if (event.symposiumName === 'Enigma') {
-      if (event.eventCategory === 'Workshop' && event.registrationFees > 0) {
-        setSelectedWorkshopEvent(event);
-        setIsWorkshopModalOpen(true);
+      return;
+    }
+
+    if (!user || !user.email) {
+      setModalContent({
+        title: 'Error',
+        message: 'Could not identify user. Please try logging in again.',
+      });
+      setIsModalOpen(true);
+      return;
+    }
+
+    setIsCartActionInProgress(true);
+    try {
+      const response = await fetch('http://localhost:5001/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userEmail: user.email,
+          eventId: event.id,
+          symposiumName: event.symposiumName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setModalContent({
+          title: 'Success',
+          message: 'Event added to cart successfully!',
+        });
+        await fetchCartItems(); // Refresh cart items
+        setIsModalOpen(true);
       } else {
-        handleFreeRegistration(event);
+        setModalContent({
+          title: 'Error',
+          message: data.message || 'Failed to add event to cart.',
+        });
+        setIsModalOpen(true);
       }
-    } else { // This handles Carteblanche events, which navigate to a separate registration page
-      navigate(`/registration?eventId=${event.id}&symposium=${event.symposiumName}`);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      setModalContent({
+        title: 'Error',
+        message: 'An unexpected error occurred. Please try again.',
+      });
+      setIsModalOpen(true);
+    } finally {
+      setIsCartActionInProgress(false);
+    }
+  };
+
+  const handleRemoveFromCart = async (eventId: number) => {
+    if (!user || !user.email) {
+      return;
+    }
+
+    const cartItem = cartItems.find(item => item.eventId === eventId);
+    if (!cartItem) {
+      return;
+    }
+
+    setIsCartActionInProgress(true);
+    try {
+      const response = await fetch(`http://localhost:5001/cart/${cartItem.cartId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userEmail: user.email }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setModalContent({
+          title: 'Success',
+          message: 'Event removed from cart successfully!',
+        });
+        await fetchCartItems(); // Refresh cart items
+        setIsModalOpen(true);
+        setTimeout(() => setIsModalOpen(false), 2000); // Auto-close after 2 seconds
+      } else {
+        setModalContent({
+          title: 'Error',
+          message: data.message || 'Failed to remove event from cart.',
+        });
+        setIsModalOpen(true);
+        setTimeout(() => setIsModalOpen(false), 2000); // Auto-close after 2 seconds
+      }
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      setModalContent({
+        title: 'Error',
+        message: 'An unexpected error occurred. Please try again.',
+      });
+      setIsModalOpen(true);
+    } finally {
+      setIsCartActionInProgress(false);
     }
   };
 
   const handleFreeRegistration = async (event: Event) => {
     if (!user) return;
+
+    console.log('Attempting free registration for event:', event.eventName);
+    console.log('User ID:', user.id);
+    console.log('Event ID:', event.id);
 
     try {
       const response = await fetch('http://localhost:5001/registrations/simple', {
@@ -157,8 +275,11 @@ const EventsPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
+          userEmail: user.email,
           eventId: event.id,
+          userName: user.name, // Assuming user.name exists
+          email: user.email,   // Assuming user.email exists
+          college: user.college, // Assuming user.college exists
         }),
       });
 
@@ -260,6 +381,8 @@ const EventsPage: React.FC = () => {
               {filteredEvents.map((event) => {
                 const isRegistrationClosed = new Date() > new Date(event.lastDateForRegistration);
                 const isRegistered = registeredEvents.includes(event.id);
+                const isInCart = cartItems.some(item => item.eventId === event.id);
+
                 return (
                   <div
                     key={event.id}
@@ -286,11 +409,20 @@ const EventsPage: React.FC = () => {
                       <EventCountdown lastDateForRegistration={event.lastDateForRegistration} />
 
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleRegisterClick(event); }}
-                        disabled={isRegistered || isRegistrationClosed}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isInCart) {
+                            handleRemoveFromCart(event.id);
+                          } else {
+                            handleAddToCart(event);
+                          }
+                        }}
+                        disabled={isRegistrationClosed || isCartActionInProgress}
                         className={`mt-4 inline-block px-4 py-2 font-semibold rounded-lg transition ${
-                          isRegistered || isRegistrationClosed
+                          isRegistrationClosed
                             ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                            : isInCart
+                            ? 'bg-red-600 text-white hover:bg-red-700'
                             : 'bg-purple-600 text-white hover:bg-purple-700'
                         }`}
                       >
@@ -298,7 +430,9 @@ const EventsPage: React.FC = () => {
                           ? 'Already Registered'
                           : isRegistrationClosed
                           ? 'Registration Closed'
-                          : 'Register Now'}
+                          : isInCart
+                          ? 'Remove from Cart'
+                          : 'Add to Cart'}
                       </button>
                     </div>
                   </div>

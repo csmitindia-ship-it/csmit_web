@@ -16,6 +16,8 @@ import EventsPage from "./pages/EventsPage.tsx";
 import RegistrationPage from "./pages/RegistrationPage.tsx";
 import ProtectedRoute from "./ProtectedRoute.tsx";
 import UnprotectedRoute from "./UnprotectedRoute.tsx";
+import ViewEventRegistrationsPage from "./pages/ViewEventRegistrationsPage.tsx";
+import AdminViewRegistrationsOverviewPage from "./pages/AdminViewRegistrationsOverviewPage.tsx";
 
 export default function App() {
   const [showIntro, setShowIntro] = useState(sessionStorage.getItem('introSeen') !== 'true');
@@ -82,6 +84,8 @@ export default function App() {
           <Route path="approved-experiences" element={<ApprovedExperiencesPage />} />
           <Route path="events-display" element={<AdminEventsDisplayPage />} />
           <Route path="account-details" element={<AccountDetailsPage />} />
+          <Route path="events/registrations/:eventId" element={<ViewEventRegistrationsPage />} />
+          <Route path="view-registrations" element={<AdminViewRegistrationsOverviewPage />} />
         </Route>
       </Route>
 

@@ -58,7 +58,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
 
       for (const round of rounds) {
         await db.execute(
-          `INSERT INTO ${roundsTable} (eventId, roundNumber, roundDetails, roundDateTime) VALUES (?, ?, ?, ?)`,
+          `INSERT INTO ${roundsTable} (eventId, roundNumber, roundDetails, roundDateTime) VALUES (?, ?, ?, ?)`, 
           [eventId, round.roundNumber, round.roundDetails, round.roundDateTime]
         );
       }
@@ -123,6 +123,23 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
     }
   });
 
+  router.get('/:eventId/registrations', async (req, res) => {
+    const { eventId } = req.params;
+    try {
+      const [registrations] = await db.execute(
+        `SELECT r.*, u.name, u.email, u.mobile, u.department, u.year, u.college 
+         FROM registrations r 
+         JOIN users u ON r.userId = u.id 
+         WHERE r.eventId = ?`, 
+        [eventId]
+      );
+      res.json(registrations);
+    } catch (error) {
+      console.error('Error fetching registrations:', error);
+      res.status(500).json({ message: 'Failed to fetch registrations.' });
+    }
+  });
+
   router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const {
@@ -178,7 +195,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
       await db.execute(`DELETE FROM ${roundsTable} WHERE eventId = ?`, [id]);
       for (const round of rounds) {
         await db.execute(
-          `INSERT INTO ${roundsTable} (eventId, roundNumber, roundDetails, roundDateTime) VALUES (?, ?, ?, ?)`,
+          `INSERT INTO ${roundsTable} (eventId, roundNumber, roundDetails, roundDateTime) VALUES (?, ?, ?, ?)`, 
           [id, round.roundNumber, round.roundDetails, round.roundDateTime]
         );
       }
@@ -221,7 +238,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
 
     try {
       await db.execute(
-        `UPDATE ${eventTable} SET posterUrl = ? WHERE id = ?`,
+        `UPDATE ${eventTable} SET posterUrl = ? WHERE id = ?`, 
         [posterUrl, id]
       );
       res.status(200).json({ message: 'Poster uploaded successfully.', posterUrl });
@@ -299,7 +316,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
 
       // Check if already assigned
       const [existingAssignment] = await db.execute(
-        'SELECT * FROM event_accounts WHERE eventId = ? AND accountId = ?',
+        'SELECT * FROM event_accounts WHERE eventId = ? AND accountId = ?', 
         [eventId, accountId]
       );
       if (existingAssignment.length > 0) {
@@ -307,7 +324,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
       }
 
       await db.execute(
-        'INSERT INTO event_accounts (eventId, accountId) VALUES (?, ?)',
+        'INSERT INTO event_accounts (eventId, accountId) VALUES (?, ?)', 
         [eventId, accountId]
       );
       res.status(201).json({ message: 'Account assigned to event successfully.' });
@@ -325,7 +342,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
         `SELECT ea.accountId AS id, a.accountName, a.bankName, a.accountNumber, a.ifscCode
          FROM event_accounts ea
          JOIN accounts a ON ea.accountId = a.id
-         WHERE ea.eventId = ?`,
+         WHERE ea.eventId = ?`, 
         [eventId]
       );
       res.status(200).json(rows);
@@ -340,7 +357,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
     const { eventId, accountId } = req.params;
     try {
       const [result] = await db.execute(
-        'DELETE FROM event_accounts WHERE eventId = ? AND accountId = ?',
+        'DELETE FROM event_accounts WHERE eventId = ? AND accountId = ?', 
         [eventId, accountId]
       );
       if (result.affectedRows === 0) {

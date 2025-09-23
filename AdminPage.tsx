@@ -65,6 +65,12 @@ const AdminPage: React.FC = () => {
             >
               Account Details
             </button>
+            <button
+              onClick={() => navigate('view-registrations')}
+              className={getButtonClass('view-registrations')}
+            >
+              View Registrations
+            </button>
           </div>
 
           <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg">
