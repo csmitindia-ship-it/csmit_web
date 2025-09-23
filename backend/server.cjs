@@ -185,6 +185,19 @@ async function createTablesIfNotExists() {
       userName VARCHAR(255) NOT NULL,
       userEmail VARCHAR(255) NOT NULL,
       transactionId VARCHAR(255),
+      transactionUsername VARCHAR(255),
+      transactionTime VARCHAR(255),
+      transactionDate VARCHAR(255),
+      transactionAmount DECIMAL(10, 2),
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const createEnigmaNonWorkshopRegistrationsTableQuery = `
+    CREATE TABLE IF NOT EXISTS enigma_non_workshop_registrations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userEmail VARCHAR(255) NOT NULL,
+      eventId INT NOT NULL,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -208,8 +221,12 @@ async function createTablesIfNotExists() {
     console.log('Accounts table is ready.');
     await db.execute(createEventAccountsTableQuery);
     console.log('Event accounts table is ready.');
+    await db.execute('DROP TABLE IF EXISTS registrations;'); // Temporarily drop to recreate with new schema
+    console.log('Old registrations table dropped (if existed).');
     await db.execute(createRegistrationsTableQuery);
     console.log('Registrations table is ready.');
+    await db.execute(createEnigmaNonWorkshopRegistrationsTableQuery);
+    console.log('Enigma non-workshop registrations table is ready.');
   } catch (error) {
     console.error('Error creating tables:', error);
     process.exit(1);

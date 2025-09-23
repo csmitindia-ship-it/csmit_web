@@ -165,7 +165,6 @@ const AdminEventsDisplayPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map(event => (
               <div key={event.id} className="relative bg-gray-900/70 p-5 rounded-lg border border-gray-700 shadow-lg">
-                {console.log(`Event ID: ${event.id}, Poster URL: ${event.posterUrl}`)}
                 <div className="absolute top-3 right-3">
                   <button
                     onClick={() => setShowMenuForEventId(showMenuForEventId === event.id ? null : event.id)}

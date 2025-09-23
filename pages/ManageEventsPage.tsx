@@ -398,10 +398,9 @@ const App: React.FC = () => {
                       >
                         <option value="">Select Category</option>
                         <option value="Workshop">Workshop</option>
-                        <option value="Seminar">Seminar</option>
-                        <option value="Webinar">Webinar</option>
-                        <option value="Competition">Competition</option>
-                        <option value="Festival">Festival</option>
+                        <option value="Webinar">Paper Presentation</option>
+                        <option value="Competition">Technical Events</option>
+                        <option value="Festival">Non-Technical Events</option>
                         <option value="Other">Other</option>
                       </select>
                       <input
@@ -413,6 +412,7 @@ const App: React.FC = () => {
                         required
                         className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white"
                       />
+                      <label className="block text-sm font-medium text-gray-300">Registration Fees</label>
                       <input
                         type="number"
                         name="registrationFees"

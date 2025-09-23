@@ -6,7 +6,9 @@ import LoginPage from '../Login_Sign/LoginPage';
 import SignUpPage from '../Login_Sign/SignUpPage'; 
 import Loader from '../components/Loader'; 
 import { useAuth } from '../context/AuthContext'; 
-import ThemedModal from '../components/ThemedModal'; 
+import ThemedModal from '../components/ThemedModal';
+import EventCountdown from '../components/EventCountdown'; 
+import WorkshopRegistrationModal from '../components/WorkshopRegistrationModal';
 
 interface Round {
   roundNumber: number;
@@ -46,6 +48,8 @@ const EventsPage: React.FC = () => {
   const [eventCategories, setEventCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null); // New state for selected event
+  const [isWorkshopModalOpen, setIsWorkshopModalOpen] = useState(false);
+  const [selectedWorkshopEvent, setSelectedWorkshopEvent] = useState<Event | null>(null);
 
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -74,9 +78,10 @@ const EventsPage: React.FC = () => {
   const fetchRegisteredEvents = async () => {
     if (user) {
       try {
-        const response = await fetch(`http://localhost:5001/registrations/${user.email}`);
+        const response = await fetch(`http://localhost:5001/registrations/${user.id}`);
         const data = await response.json();
         setRegisteredEvents(data.map((reg: any) => reg.eventId));
+        console.log('EventsPage: Registered events fetched:', data.map((reg: any) => reg.eventId));
       } catch (error) {
         console.error('Error fetching registered events:', error);
       }
@@ -89,7 +94,7 @@ const EventsPage: React.FC = () => {
     if (isLoggedIn) {
       fetchRegisteredEvents();
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, user]);
 
   useEffect(() => {
     // Filter events by activeSymposium to get relevant categories
@@ -130,38 +135,55 @@ const EventsPage: React.FC = () => {
   const handleRegisterClick = async (event: Event) => {
     if (!isLoggedIn) {
       setIsLoginModalOpen(true);
-    } else if (event.symposiumName === 'Enigma' && event.eventCategory !== 'Workshop') {
-      if (registeredEvents.includes(event.id)) {
-        return; // Already registered
+    } else if (event.symposiumName === 'Enigma') {
+      if (event.eventCategory === 'Workshop' && event.registrationFees > 0) {
+        setSelectedWorkshopEvent(event);
+        setIsWorkshopModalOpen(true);
+      } else {
+        handleFreeRegistration(event);
       }
-      if (window.confirm(`Do you want to register for ${event.eventName}?`)) {
-        try {
-          const response = await fetch('http://localhost:5001/registrations', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ userEmail: user?.email, eventId: event.id }),
-          });
-          if (response.ok) {
-            setRegisteredEvents([...registeredEvents, event.id]);
-            setSelectedEvent(null); // Ensure selectedEvent is null for message modal
-            setModalContent({ title: 'Success', message: 'Successfully registered!' });
-            setIsModalOpen(true);
-          } else {
-            setSelectedEvent(null); // Ensure selectedEvent is null for message modal
-            setModalContent({ title: 'Error', message: 'Registration failed.' });
-            setIsModalOpen(true);
-          }
-        } catch (error) {
-          console.error('Registration error:', error);
-          setSelectedEvent(null); // Ensure selectedEvent is null for message modal
-          setModalContent({ title: 'Error', message: 'An error occurred during registration.' });
-          setIsModalOpen(true);
-        }
-      }
-    } else {
+    } else { // This handles Carteblanche events, which navigate to a separate registration page
       navigate(`/registration?eventId=${event.id}&symposium=${event.symposiumName}`);
+    }
+  };
+
+  const handleFreeRegistration = async (event: Event) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('http://localhost:5001/registrations/simple', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          eventId: event.id,
+        }),
+      });
+
+      if (response.ok) {
+        setRegisteredEvents([...registeredEvents, event.id]);
+        setModalContent({
+          title: 'Registration Successful',
+          message: `You have successfully registered for ${event.eventName}.`,
+        });
+        setIsModalOpen(true);
+      } else {
+        const data = await response.json();
+        setModalContent({
+          title: 'Registration Failed',
+          message: data.message || 'An error occurred during registration.',
+        });
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Free registration failed:', error);
+      setModalContent({
+        title: 'Registration Failed',
+        message: 'An unexpected error occurred. Please try again.',
+      });
+      setIsModalOpen(true);
     }
   };
 
@@ -235,35 +257,53 @@ const EventsPage: React.FC = () => {
             <p className="text-center text-xl text-gray-400 mt-10">Events haven't started yet.</p>
           ) : (
 <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-8">
-              {filteredEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-gray-800/70 backdrop-blur-md p-6 rounded-lg border border-gray-700 text-center cursor-pointer hover:border-purple-500 transition-all duration-300 w-full sm:w-96"
-                  onClick={() => handleViewDetails(event)}
-                >
-                  {event.posterUrl && (
-                    <img
-                      src={`src/backend/${event.posterUrl}`}
-                      alt={event.eventName}
-                      className="w-full max-h-64 object-contain rounded-md mb-4 mx-auto"
-                    />
-                  )}
-                  <h3 className="text-xl font-bold text-white mb-2">{event.eventName}</h3>
-                  <p className="text-gray-400 text-sm mb-2">{event.eventCategory}</p>
-                  <p className="text-gray-300 text-sm mb-4">{event.eventDescription.substring(0, 100)}...</p>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleRegisterClick(event); }}
-                    disabled={registeredEvents.includes(event.id)}
-                    className={`mt-4 inline-block px-4 py-2 font-semibold rounded-lg transition ${
-                      registeredEvents.includes(event.id)
-                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                        : 'bg-purple-600 text-white hover:bg-purple-700'
-                    }`}
+              {filteredEvents.map((event) => {
+                const isRegistrationClosed = new Date() > new Date(event.lastDateForRegistration);
+                const isRegistered = registeredEvents.includes(event.id);
+                return (
+                  <div
+                    key={event.id}
+                    className="relative group overflow-hidden rounded-xl shadow-lg border border-gray-700 bg-gray-800/70 backdrop-blur-md cursor-pointer transition-all duration-500 hover:scale-105 hover:border-blue-400 w-full sm:w-96"
+                    onClick={() => handleViewDetails(event)}
                   >
-                    {registeredEvents.includes(event.id) ? 'Registered' : 'Register Event'}
-                  </button>
-                </div>
-              ))}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"></div>
+
+                    <div className="relative z-10 p-6 flex flex-col h-full">
+                      {event.posterUrl && (
+                        <div className="mb-4">
+                          <img
+                            src={`src/backend/${event.posterUrl}`}
+                            alt={event.eventName}
+                            className="w-full h-48 object-cover rounded-md mx-auto shadow-md"
+                          />
+                        </div>
+                      )}
+
+                      <h3 className="text-2xl font-extrabold text-white mb-1 leading-tight">{event.eventName}</h3>
+                      <p className="text-purple-300 text-sm font-medium mb-3">{event.eventCategory}</p>
+                      <p className="text-gray-300 text-base mb-4 flex-grow">{event.eventDescription.substring(0, 100)}...</p>
+
+                      <EventCountdown lastDateForRegistration={event.lastDateForRegistration} />
+
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleRegisterClick(event); }}
+                        disabled={isRegistered || isRegistrationClosed}
+                        className={`mt-4 inline-block px-4 py-2 font-semibold rounded-lg transition ${
+                          isRegistered || isRegistrationClosed
+                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                            : 'bg-purple-600 text-white hover:bg-purple-700'
+                        }`}
+                      >
+                        {isRegistered
+                          ? 'Already Registered'
+                          : isRegistrationClosed
+                          ? 'Registration Closed'
+                          : 'Register Now'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -357,6 +397,15 @@ const EventsPage: React.FC = () => {
           <p className="text-gray-300 mb-6">{modalContent.message}</p>
         )}
       </ThemedModal>
+
+      {selectedWorkshopEvent && (
+        <WorkshopRegistrationModal
+          isOpen={isWorkshopModalOpen}
+          onClose={() => setIsWorkshopModalOpen(false)}
+          event={selectedWorkshopEvent}
+          isRegistered={registeredEvents.includes(selectedWorkshopEvent.id)} // Pass isRegistered prop
+        />
+      )}
     </div>
   );
 

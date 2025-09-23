@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import ThemedModal from './ThemedModal';
+import { useAuth } from '../context/AuthContext'; // Corrected import
 
-interface GeneralRegistrationFormProps {
-  eventName: string;
-  userName: string;
-  userEmail: string;
-  symposium: string;
-  eventId: string;
+interface WorkshopRegistrationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  event: any; // TODO: Define a proper interface for event
+  isRegistered: boolean;
 }
 
-const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ eventName, userName, userEmail, symposium, eventId }) => {
-  const { user } = useAuth();
+const WorkshopRegistrationModal: React.FC<WorkshopRegistrationModalProps> = ({ // Force recompile
+  isOpen,
+  onClose,
+  event,
+  isRegistered,
+}) => {
+  const { user } = useAuth(); // Corrected usage
   const [transactionId, setTransactionId] = useState<string>('');
   const [transactionUsername, setTransactionUsername] = useState<string>('');
   const [transactionTime, setTransactionTime] = useState<string>('');
@@ -22,17 +27,17 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (eventId) {
-      fetchAccountDetails(eventId);
+    if (isOpen && event?.id) {
+      fetchAccountDetails(event.id);
     }
-  }, [eventId]);
+  }, [isOpen, event?.id]);
 
   const fetchAccountDetails = async (eventId: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5001/events/${eventId}/accounts`);
-      const responseText = await response.text();
+      const response = await fetch(`http://localhost:5001/events/${eventId}/accounts`); // Absolute URL
+      const responseText = await response.text(); // Consume body as text once
 
       if (!response.ok) {
         console.error('Failed to fetch account details. Response (not ok):', responseText);
@@ -41,13 +46,13 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
       
       let data;
       try {
-        data = JSON.parse(responseText);
+        data = JSON.parse(responseText); // Parse the consumed text
       } catch (jsonError: any) {
         console.error('Failed to parse JSON for account details. Raw response:', responseText, jsonError);
         throw new Error(`Failed to parse account details: ${jsonError.message}. Raw response: ${responseText.substring(0, 100)}`);
       }
       if (data.length > 0) {
-        setAccountDetails(data[0]);
+        setAccountDetails(data[0]); // Assuming one account per event for now
       } else {
         setAccountDetails(null);
         setError('No account details found for this event.');
@@ -59,10 +64,8 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!user?.email) {
+  const handleRegistration = async () => {
+    if (!user?.id) {
       setError('User not logged in.');
       return;
     }
@@ -82,8 +85,8 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
 
     try {
       // First, check if transaction ID is already used
-      const checkResponse = await fetch(`http://localhost:5001/registrations/check-transaction/${transactionId}`);
-      const checkResponseText = await checkResponse.text();
+      const checkResponse = await fetch(`http://localhost:5001/registrations/check-transaction/${transactionId}`); // Absolute URL
+      const checkResponseText = await checkResponse.text(); // Consume body as text once
 
       if (!checkResponse.ok) {
         console.error('Failed to check transaction ID. Response (not ok):', checkResponseText);
@@ -91,7 +94,7 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
       }
       let checkData;
       try {
-        checkData = JSON.parse(checkResponseText);
+        checkData = JSON.parse(checkResponseText); // Parse the consumed text
       } catch (jsonError: any) {
         console.error('Failed to parse JSON for transaction ID check. Raw response:', checkResponseText, jsonError);
         throw new Error(`Failed to parse transaction ID check: ${jsonError.message}. Raw response: ${checkResponseText.substring(0, 100)}`);
@@ -108,17 +111,17 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userEmail: user.email,
-          eventId: eventId,
+          userId: user.id,
+          eventId: event.id,
           transactionId,
           transactionUsername,
           transactionTime,
           transactionDate,
-          transactionAmount: Number(transactionAmount),
+          transactionAmount: Number(transactionAmount), // Ensure it's a number
         }),
       });
 
-      const responseText = await response.text();
+      const responseText = await response.text(); // Consume body as text once
 
       if (!response.ok) {
         console.error('Failed to register. Response (not ok):', responseText);
@@ -126,38 +129,41 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
       }
       let data;
       try {
-        data = JSON.parse(responseText);
+        data = JSON.parse(responseText); // Parse the consumed text
       } catch (jsonError: any) {
         console.error('Failed to parse JSON for registration. Raw response:', responseText, jsonError);
         throw new Error(`Failed to parse registration: ${jsonError.message}. Raw response: ${responseText.substring(0, 100)}`);
       }
 
       setSuccess(data.message || 'Registration successful!');
-      setTransactionId('');
+      setTransactionId(''); // Clear input
       setTransactionUsername('');
       setTransactionTime('');
       setTransactionDate('');
       setTransactionAmount(0);
-      alert(data.message);
+      // onClose(); // Optionally close modal on success
     } catch (err: any) {
       setError(err.message);
-      alert('An error occurred during registration. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 bg-gray-800/80 p-6 rounded-lg shadow-lg">
-      <h2 className="text-xl font-semibold mb-4">Register for {eventName}</h2>
-      <div className="mb-4">
-        <p><strong>Name:</strong> {userName}</p>
-        <p><strong>Email:</strong> {userEmail}</p>
-      </div>
-
+    <ThemedModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Register for ${event?.eventName || 'Workshop'}`}
+      className="max-w-md" // Changed from default (likely larger) to md
+      hideDefaultFooter={true} // Hide default footer buttons
+    >
       {loading && <p className="text-white">Loading...</p>}
       {error && <p className="text-red-500">Error: {error}</p>}
       {success && <p className="text-green-500">Success: {success}</p>}
+
+      {isRegistered && (
+        <p className="text-green-500 text-center text-lg font-semibold mb-4">You are already registered for this workshop!</p>
+      )}
 
       {!loading && !error && accountDetails && (
         <div className="mb-6 p-5 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-lg border border-purple-700">
@@ -189,7 +195,7 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
             value={transactionId}
             onChange={(e) => setTransactionId(e.target.value)}
             placeholder="Enter your transaction ID"
-            disabled={loading}
+            disabled={loading || isRegistered}
           />
         </div>
         <div>
@@ -203,7 +209,7 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
             value={transactionUsername}
             onChange={(e) => setTransactionUsername(e.target.value)}
             placeholder="Name on transaction"
-            disabled={loading}
+            disabled={loading || isRegistered}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,7 +223,7 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 text-white"
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
-              disabled={loading}
+              disabled={loading || isRegistered}
             />
           </div>
           <div>
@@ -230,7 +236,7 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 text-white"
               value={transactionTime}
               onChange={(e) => setTransactionTime(e.target.value)}
-              disabled={loading}
+              disabled={loading || isRegistered}
             />
           </div>
         </div>
@@ -245,16 +251,29 @@ const GeneralRegistrationForm: React.FC<GeneralRegistrationFormProps> = ({ event
             value={transactionAmount}
             onChange={(e) => setTransactionAmount(Number(e.target.value))}
             placeholder="Enter amount paid"
-            disabled={loading}
+            disabled={loading || isRegistered}
           />
         </div>
       </div>
 
-      <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition mt-4">
-        Register
-      </button>
-    </form>
+      <div className="flex justify-end space-x-4 mt-6">
+        <button
+          onClick={handleRegistration}
+          className="px-5 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+          disabled={loading || isRegistered || !transactionId || !transactionUsername || !transactionTime || !transactionDate || transactionAmount === '' || !accountDetails}
+        >
+          Register
+        </button>
+        <button
+          onClick={onClose}
+          className="px-5 py-2 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors"
+          disabled={loading || isRegistered}
+        >
+          Cancel
+        </button>
+      </div>
+    </ThemedModal>
   );
 };
 
-export default GeneralRegistrationForm;
+export default WorkshopRegistrationModal;
