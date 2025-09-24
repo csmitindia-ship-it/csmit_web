@@ -258,12 +258,18 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteEvent = (id: number) => {
+  const handleDeleteEvent = (id: number, symposiumName: 'Enigma' | 'Carteblanche') => {
     setModalTitle('Confirm Deletion');
-    setModalMessage('Are you sure you want to delete this event?');
+    setModalMessage(`Are you sure you want to delete this event?`);
     setModalOnConfirm(() => async () => {
       try {
-        const response = await fetch(`http://localhost:5001/events/${id}`, { method: 'DELETE' });
+        const response = await fetch(`http://localhost:5001/events/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ symposiumName }),
+        });
         if (!response.ok) throw new Error('Failed to delete event');
         fetchEvents();
         setModalTitle('Success');
@@ -513,7 +519,7 @@ const App: React.FC = () => {
                           >
                             Edit
                           </button>
-                          <button onClick={() => handleDeleteEvent(event.id)} className="px-2 py-1 bg-red-600 rounded-md text-sm">
+                          <button onClick={() => handleDeleteEvent(event.id, event.symposiumName)} className="px-2 py-1 bg-red-600 rounded-md text-sm">
                             Delete
                           </button>
                           <button

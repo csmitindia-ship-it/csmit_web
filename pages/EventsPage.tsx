@@ -95,11 +95,11 @@ const EventsPage: React.FC = () => {
   };
 
   const fetchCartItems = async () => {
-    if (!user || !user.email) {
+    if (!user || !user.id) {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:5001/cart/${user.email}`);
+      const response = await fetch(`http://localhost:5001/cart/${user.id}`);
       const data = await response.json();
       setCartItems(data);
     } catch (error) {
@@ -114,6 +114,17 @@ const EventsPage: React.FC = () => {
       fetchRegisteredEvents();
       fetchCartItems();
     }
+
+    const handleRegistrationComplete = () => {
+      console.log('registrationComplete event received');
+      fetchRegisteredEvents();
+    };
+
+    window.addEventListener('registrationComplete', handleRegistrationComplete);
+
+    return () => {
+      window.removeEventListener('registrationComplete', handleRegistrationComplete);
+    };
   }, [isLoggedIn, user]);
 
   useEffect(() => {
@@ -134,6 +145,15 @@ const EventsPage: React.FC = () => {
       setActiveCategory(null);
     }
   }, [events, activeSymposium]); // Add activeSymposium to dependencies
+
+  useEffect(() => {
+    // This effect runs when cartItems changes. If a cart action was in progress,
+    // it means the action is now complete and the state has been updated, so we can
+    // re-enable the button.
+    if (isCartActionInProgress) {
+      setIsCartActionInProgress(false);
+    }
+  }, [cartItems]);
 
   console.log('EventsPage: Current state - isLoading:', isLoading, 'authLoading:', authLoading, 'isLoggedIn:', isLoggedIn, 'user:', user);
 
@@ -196,6 +216,7 @@ const EventsPage: React.FC = () => {
           message: data.message || 'Failed to add event to cart.',
         });
         setIsModalOpen(true);
+        setIsCartActionInProgress(false); // Re-enable on failure
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -204,8 +225,7 @@ const EventsPage: React.FC = () => {
         message: 'An unexpected error occurred. Please try again.',
       });
       setIsModalOpen(true);
-    } finally {
-      setIsCartActionInProgress(false);
+      setIsCartActionInProgress(false); // Re-enable on failure
     }
   };
 
@@ -248,6 +268,7 @@ const EventsPage: React.FC = () => {
         });
         setIsModalOpen(true);
         setTimeout(() => setIsModalOpen(false), 2000); // Auto-close after 2 seconds
+        setIsCartActionInProgress(false); // Re-enable on failure
       }
     } catch (error) {
       console.error('Error removing from cart:', error);
@@ -256,8 +277,7 @@ const EventsPage: React.FC = () => {
         message: 'An unexpected error occurred. Please try again.',
       });
       setIsModalOpen(true);
-    } finally {
-      setIsCartActionInProgress(false);
+      setIsCartActionInProgress(false); // Re-enable on failure
     }
   };
 
@@ -411,25 +431,36 @@ const EventsPage: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (isInCart) {
-                            handleRemoveFromCart(event.id);
+                          if (isRegistered) return;
+                          if (event.registrationFees === 0) {
+                            handleFreeRegistration(event);
                           } else {
-                            handleAddToCart(event);
+                            if (isInCart) {
+                              handleRemoveFromCart(event.id);
+                            } else {
+                              handleAddToCart(event);
+                            }
                           }
                         }}
-                        disabled={isRegistrationClosed || isCartActionInProgress}
+                        disabled={isRegistrationClosed || isCartActionInProgress || isRegistered}
                         className={`mt-4 inline-block px-4 py-2 font-semibold rounded-lg transition ${
-                          isRegistrationClosed
+                          isRegistered
+                            ? 'bg-gray-600 text-white cursor-not-allowed'
+                            : isRegistrationClosed
                             ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                            : event.registrationFees === 0
+                            ? 'bg-green-600 text-white hover:bg-green-700'
                             : isInCart
                             ? 'bg-red-600 text-white hover:bg-red-700'
                             : 'bg-purple-600 text-white hover:bg-purple-700'
                         }`}
                       >
                         {isRegistered
-                          ? 'Already Registered'
+                          ? 'Registered'
                           : isRegistrationClosed
                           ? 'Registration Closed'
+                          : event.registrationFees === 0
+                          ? 'Register for Free'
                           : isInCart
                           ? 'Remove from Cart'
                           : 'Add to Cart'}

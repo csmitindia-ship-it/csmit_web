@@ -12,6 +12,7 @@ const fs = require('fs');
 const app = express();
 app.use(bodyParser.json());
 app.use(cors({
+  origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
 }));
 
@@ -45,7 +46,8 @@ const eventPosterStorage = multer.diskStorage({
 });
 
 const uploadPdf = multer({ storage: pdfStorage, limits: { fileSize: 1 * 1024 * 1024 } });
-const uploadEventPoster = multer({ storage: eventPosterStorage, limits: { fileSize: 5 * 1024 * 1024 } }); // Increased limit for posters to 5MB
+const uploadEventPoster = multer({ storage: eventPosterStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+const uploadTransactionScreenshot = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -184,11 +186,13 @@ async function createTablesIfNotExists() {
       eventId INT NOT NULL,
       userName VARCHAR(255) NOT NULL,
       userEmail VARCHAR(255) NOT NULL,
+      mobileNumber VARCHAR(20),
       transactionId VARCHAR(255),
       transactionUsername VARCHAR(255),
       transactionTime VARCHAR(255),
       transactionDate VARCHAR(255),
       transactionAmount DECIMAL(10, 2),
+      transactionScreenshot MEDIUMBLOB,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -213,6 +217,17 @@ async function createTablesIfNotExists() {
     );
   `;
 
+  const createVerifiedRegistrationsTableQuery = `
+    CREATE TABLE IF NOT EXISTS verified_registrations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      eventId INT NOT NULL,
+      verified BOOLEAN NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `;
+
   try {
     await db.execute(createUserTableQuery);
     console.log('Users table is ready.');
@@ -232,14 +247,36 @@ async function createTablesIfNotExists() {
     console.log('Accounts table is ready.');
     await db.execute(createEventAccountsTableQuery);
     console.log('Event accounts table is ready.');
-    await db.execute('DROP TABLE IF EXISTS registrations;'); // Temporarily drop to recreate with new schema
-    console.log('Old registrations table dropped (if existed).');
+    
     await db.execute(createRegistrationsTableQuery);
     console.log('Registrations table is ready.');
     await db.execute(createEnigmaNonWorkshopRegistrationsTableQuery);
     console.log('Enigma non-workshop registrations table is ready.');
-    await db.execute(createCartTableQuery); // Added cart table creation
+    await db.execute(createCartTableQuery);
     console.log('Cart table is ready.');
+    await db.execute(createVerifiedRegistrationsTableQuery);
+    console.log('Verified registrations table is ready.');
+
+    const createSymposiumStatusTableQuery = `
+      CREATE TABLE IF NOT EXISTS symposium_status (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        symposiumName VARCHAR(255) NOT NULL UNIQUE,
+        isOpen BOOLEAN DEFAULT FALSE,
+        startDate DATE,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `;
+    await db.execute(createSymposiumStatusTableQuery);
+    console.log('Symposium status table is ready.');
+
+    const symposiums = ['Enigma', 'Carteblanche'];
+    for (const sym of symposiums) {
+      const [rows] = await db.execute('SELECT * FROM symposium_status WHERE symposiumName = ?', [sym]);
+      if (rows.length === 0) {
+        await db.execute('INSERT INTO symposium_status (symposiumName) VALUES (?)', [sym]);
+      }
+    }
+    console.log('Initial symposiums checked/inserted.');
   } catch (error) {
     console.error('Error creating tables:', error);
     process.exit(1);
@@ -263,15 +300,19 @@ async function startServer() {
   const eventsRouter = require('./events.cjs')(db, uploadEventPoster, eventPosterDir);
   const placementsRouter = require('./placements.cjs')(db, uploadPdf);
   const accountsRouter = require('./accounts.cjs')(db);
-  const registrationsRouter = require('./registrations.cjs')(db);
-  const cartRouter = require('./cart.cjs')(db); // New: Cart Router
+  const registrationsRouter = require('./registrations.cjs')(db, uploadTransactionScreenshot);
+  const cartRouter = require('./cart.cjs')(db);
+  const verificationRouter = require('./verification.cjs')(db);
+  const symposiumRouter = require('./symposium.cjs')(db);
 
   app.use('/auth', authRouter);
   app.use('/events', eventsRouter);
   app.use(placementsRouter);
   app.use('/admin/accounts', accountsRouter);
   app.use('/registrations', registrationsRouter);
-  app.use('/cart', cartRouter); // New: Use Cart Router
+  app.use('/cart', cartRouter);
+  app.use('/verification', verificationRouter);
+  app.use('/api/symposium', symposiumRouter);
 
   // --- Start Server ---
   app.use((req, res, next) => {

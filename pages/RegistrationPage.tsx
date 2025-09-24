@@ -18,19 +18,37 @@ const RegistrationPage: React.FC = () => {
   const eventId = searchParams.get('eventId');
   const symposium = searchParams.get('symposium');
   const [event, setEvent] = useState<any>(null);
+  const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
-    console.log('eventId:', eventId);
-    console.log('symposium:', symposium);
-    if (eventId && symposium) {
-      fetch(`http://localhost:5001/events/${eventId}?symposium=${symposium}`)
-        .then(res => res.json())
-        .then(data => {
-          console.log('event data:', data);
+    const fetchEventDetails = async () => {
+      if (eventId && symposium) {
+        try {
+          const response = await fetch(`http://localhost:5001/events/${eventId}?symposium=${symposium}`);
+          const data = await response.json();
           setEvent(data);
-        });
-    }
-  }, [eventId, symposium]);
+        } catch (error) {
+          console.error("Error fetching event details:", error);
+        }
+      }
+    };
+
+    const checkRegistrationStatus = async () => {
+      if (user && user.email && eventId) {
+        try {
+          const response = await fetch(`http://localhost:5001/registrations/${user.email}`);
+          const registrations = await response.json();
+          const isAlreadyRegistered = registrations.some((reg: any) => reg.eventId === parseInt(eventId, 10));
+          setIsRegistered(isAlreadyRegistered);
+        } catch (error) {
+          console.error("Error fetching registration status:", error);
+        }
+      }
+    };
+
+    fetchEventDetails();
+    checkRegistrationStatus();
+  }, [eventId, symposium, user]);
 
   const handleSwitchToSignUp = () => {
     setIsLoginModalOpen(false);

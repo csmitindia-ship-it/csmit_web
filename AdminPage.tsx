@@ -3,8 +3,6 @@ import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import backgroundImage from './Login_Sign/photo.jpeg';
 import Header from './ui/Header';
 
-type AdminTab = 'manage-events' | 'pending-experiences' | 'approved-experiences';
-
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,7 +32,7 @@ const AdminPage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-12 text-center">Admin Dashboard</h1>
 
-          <div className="flex justify-center items-center gap-4 mb-12 backdrop-blur-md bg-gray-900/50 p-4 rounded-lg border border-purple-500/30">
+          <div className="flex flex-wrap justify-center items-center gap-4 mb-12 backdrop-blur-md bg-gray-900/50 p-4 rounded-lg border border-purple-500/30">
             <button
               onClick={() => navigate('manage-events')}
               className={getButtonClass('manage-events')}
@@ -70,6 +68,12 @@ const AdminPage: React.FC = () => {
               className={getButtonClass('view-registrations')}
             >
               View Registrations
+            </button>
+            <button
+              onClick={() => navigate('registration-status')}
+              className={getButtonClass('registration-status')}
+            >
+              Registration Status
             </button>
           </div>
 

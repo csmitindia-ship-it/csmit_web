@@ -32,6 +32,26 @@ module.exports = (db) => {
     }
   });
 
+  // Get account details for a specific event
+  router.get('/event/:eventId', async (req, res) => {
+    const { eventId } = req.params;
+    try {
+      const [eventAccount] = await db.execute('SELECT accountId FROM event_accounts WHERE eventId = ?', [eventId]);
+      if (eventAccount.length === 0) {
+        return res.status(404).json({ message: 'Account for this event not found.' });
+      }
+      const accountId = eventAccount[0].accountId;
+      const [account] = await db.execute('SELECT * FROM accounts WHERE id = ?', [accountId]);
+      if (account.length === 0) {
+        return res.status(404).json({ message: 'Account details not found.' });
+      }
+      res.status(200).json(account[0]);
+    } catch (error) {
+      console.error('Error fetching account details for event:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Update account details
   router.put('/:id', async (req, res) => {
     const { id } = req.params;

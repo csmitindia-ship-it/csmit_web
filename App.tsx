@@ -18,6 +18,9 @@ import ProtectedRoute from "./ProtectedRoute.tsx";
 import UnprotectedRoute from "./UnprotectedRoute.tsx";
 import ViewEventRegistrationsPage from "./pages/ViewEventRegistrationsPage.tsx";
 import AdminViewRegistrationsOverviewPage from "./pages/AdminViewRegistrationsOverviewPage.tsx";
+import CartPage from "./pages/CartPage.tsx";
+import RegistrationStatusPage from "./pages/RegistrationStatusPage.tsx";
+import EnrolledEventsPage from "./pages/EnrolledEventsPage";
 
 export default function App() {
   const [showIntro, setShowIntro] = useState(sessionStorage.getItem('introSeen') !== 'true');
@@ -86,6 +89,7 @@ export default function App() {
           <Route path="account-details" element={<AccountDetailsPage />} />
           <Route path="events/registrations/:eventId" element={<ViewEventRegistrationsPage />} />
           <Route path="view-registrations" element={<AdminViewRegistrationsOverviewPage />} />
+          <Route path="registration-status" element={<RegistrationStatusPage />} />
         </Route>
       </Route>
 
@@ -101,6 +105,8 @@ export default function App() {
       <Route path="/events" element={<EventsPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/registration" element={<RegistrationPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/enrolled-events" element={<EnrolledEventsPage />} />
       </Route>
     </Routes>
   );
