@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 interface SignUpPageProps {
   isOpen: boolean;
@@ -7,9 +6,7 @@ interface SignUpPageProps {
   onSwitchToLogin: () => void;
 }
 
-
-
-const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogin }) => {
+export default function SignUpPage({ isOpen, onClose, onSwitchToLogin }: SignUpPageProps) {
   if (!isOpen) return null;
 
   const [formData, setFormData] = useState({
@@ -30,7 +27,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showOtherCollegeInput, setShowOtherCollegeInput] = useState(false); // New state variable
-  const navigate = useNavigate();
 
   const states = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -236,6 +232,4 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ isOpen, onClose, onSwitchToLogi
       </div>
     </div>
   );
-};
-
-export default SignUpPage;
+}

@@ -195,5 +195,57 @@ module.exports = function(db, uploadTransactionScreenshot) {
     }
   });
 
+  router.get('/user/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+      const [[user]] = await db.execute('SELECT email FROM users WHERE id = ?', [userId]);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+      const userEmail = user.email;
+
+      const [allRegistrations] = await db.execute(
+        `SELECT id, eventId, userEmail, round1, round2, round3, symposium FROM registrations WHERE userEmail = ?
+         UNION
+         SELECT id, eventId, userEmail, -1 as round1, -1 as round2, -1 as round3, 'Enigma' as symposium FROM enigma_non_workshop_registrations WHERE userEmail = ?`,
+        [userEmail, userEmail]
+      );
+
+      const registrationsWithEvents = [];
+      for (const reg of allRegistrations) {
+        let event;
+        let rounds;
+        let eventTable = '';
+        let roundsTable = '';
+
+        if (reg.symposium === 'Enigma') {
+          eventTable = 'enigma_events';
+          roundsTable = 'enigma_rounds';
+        } else if (reg.symposium === 'Carteblanche') {
+          eventTable = 'carte_blanche_events';
+          roundsTable = 'carte_blanche_rounds';
+        }
+
+        if (eventTable) {
+          const [[eventResult]] = await db.execute(`SELECT * FROM ${eventTable} WHERE id = ?`, [reg.eventId]);
+          event = eventResult;
+          if (event) {
+            const [roundsResult] = await db.execute(`SELECT * FROM ${roundsTable} WHERE eventId = ?`, [reg.eventId]);
+            event.rounds = roundsResult;
+          }
+        }
+        
+        registrationsWithEvents.push({ ...reg, event });
+      }
+
+      res.status(200).json(registrationsWithEvents);
+
+    } catch (error) {
+      console.error('Error fetching user registrations:', error);
+      res.status(500).json({ message: 'Failed to fetch user registrations.' });
+    }
+  });
+
   return router;
 };

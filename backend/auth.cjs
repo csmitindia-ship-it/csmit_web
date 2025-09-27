@@ -73,14 +73,27 @@ module.exports = function(db, transporter) {
     }
 
     try {
-      const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+      // Check in organizers table first
+      const [organizerRows] = await db.execute('SELECT * FROM organizers WHERE email = ?', [email]);
 
-      if (rows.length === 0) {
+      if (organizerRows.length > 0) {
+        const organizer = organizerRows[0];
+        const isPasswordValid = await bcrypt.compare(password, organizer.password);
+
+        if (isPasswordValid) {
+          const { password: _, ...organizerData } = organizer;
+          return res.json({ message: 'Login successful', user: { ...organizerData, role: 'organizer' } });
+        }
+      }
+
+      // If not in organizers, check in users table
+      const [userRows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+
+      if (userRows.length === 0) {
         return res.status(404).json({ message: 'User not found.' });
       }
 
-      const user = rows[0];
-
+      const user = userRows[0];
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
@@ -88,8 +101,7 @@ module.exports = function(db, transporter) {
       }
 
       const { password: _, ...userData } = user;
-
-      res.json({ message: 'Login successful', user: userData });
+      res.json({ message: 'Login successful', user: { ...userData, role: 'student' } });
     } catch (error) {
       console.error('Error during login:', error);
       res.status(500).json({ message: 'Failed to login.' });

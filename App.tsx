@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import HomePage from "./HomePage";
 import { useAuth } from "./context/AuthContext";
 import AdminPage from "./AdminPage.tsx";
@@ -21,12 +21,19 @@ import AdminViewRegistrationsOverviewPage from "./pages/AdminViewRegistrationsOv
 import CartPage from "./pages/CartPage.tsx";
 import RegistrationStatusPage from "./pages/RegistrationStatusPage.tsx";
 import EnrolledEventsPage from "./pages/EnrolledEventsPage";
+import OrganizerPage from "./pages/OrganizerPage";
+import UpdateWinnersPage from "./pages/UpdateWinnersPage";
+import Header from "./ui/Header";
+import AdminHeader from "./ui/AdminHeader";
+import OrganizerHeader from "./ui/OrganizerHeader";
+import OrganizerProtectedRoute from "./OrganizerProtectedRoute.tsx";
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState(sessionStorage.getItem('introSeen') !== 'true');
+  const [showIntro, setShowIntro] = useState(sessionStorage.getItem("introSeen") !== "true");
   const [currentLine, setCurrentLine] = useState(0);
   const [text, setText] = useState("");
-  const { logout } = useAuth();
+  const { user } = useAuth();
+  const location = useLocation();
 
   const lines = [
     "Initializing... Starting Computer Society of MIT",
@@ -53,11 +60,23 @@ export default function App() {
     if (currentLine >= lines.length && showIntro) {
       const timeout = setTimeout(() => {
         setShowIntro(false);
-        sessionStorage.setItem('introSeen', 'true');
+        sessionStorage.setItem("introSeen", "true");
       }, 1000);
       return () => clearTimeout(timeout);
     }
   }, [showIntro, currentLine]);
+
+  // Render header dynamically
+  const renderHeader = () => {
+    const path = location.pathname;
+    if (user?.role === "admin") {
+      return <AdminHeader />;
+    }
+    if (user?.role === "organizer" && path.startsWith("/organizer")) {
+      return <OrganizerHeader />;
+    }
+    return <Header setIsLoginModalOpen={() => {}} setIsSignUpModalOpen={() => {}} />;
+  };
 
   if (showIntro) {
     return (
@@ -79,35 +98,62 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route element={<ProtectedRoute role="admin" />}>
-        <Route path="/admin" element={<AdminPage />}>
-          <Route path="manage-events" element={<ManageEventsPage />} />
-          <Route path="pending-experiences" element={<PendingExperiencesPage />} />
-          <Route path="approved-experiences" element={<ApprovedExperiencesPage />} />
-          <Route path="events-display" element={<AdminEventsDisplayPage />} />
-          <Route path="account-details" element={<AccountDetailsPage />} />
-          <Route path="events/registrations/:eventId" element={<ViewEventRegistrationsPage />} />
-          <Route path="view-registrations" element={<AdminViewRegistrationsOverviewPage />} />
-          <Route path="registration-status" element={<RegistrationStatusPage />} />
+    <>
+      {renderHeader()}
+      <Routes>
+        {/* Admin routes (protected) */}
+        <Route element={<ProtectedRoute role={["admin"]} />}>
+          <Route path="/admin" element={<AdminPage />}>
+            <Route index element={<Navigate to="manage-events" replace />} />
+            <Route path="manage-events" element={<ManageEventsPage />} />
+            <Route path="pending-experiences" element={<PendingExperiencesPage />} />
+            <Route path="approved-experiences" element={<ApprovedExperiencesPage />} />
+            <Route path="events-display" element={<AdminEventsDisplayPage />} />
+            <Route path="account-details" element={<AccountDetailsPage />} />
+            <Route path="view-registrations" element={<AdminViewRegistrationsOverviewPage />} />
+            <Route path="events/registrations/:eventId" element={<ViewEventRegistrationsPage />} />
+            <Route path="registration-status" element={<RegistrationStatusPage />} />
+            <Route path="update-winners" element={<UpdateWinnersPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="/placements" element={<PlacementsPage />} />
-      
-      <Route element={<UnprotectedRoute />}>
-        <Route path="/login" element={<LoginWrapper />} />
-        <Route path="/signup" element={<SignUpPage isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />} />
-        <Route path="/forgot-password" element={<ForgotPassword isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />} />
-      </Route>
-      <Route path="/" element={<HomePage />} />
+        {/* Organizer routes (protected) */}
+        <Route element={<OrganizerProtectedRoute />}>
+          <Route path="/organizer" element={<OrganizerPage />}>
+            <Route index element={<Navigate to="registrations/view" replace />} />
+            <Route path="registrations/view" element={<AdminViewRegistrationsOverviewPage />} />
+            <Route path="registration-status" element={<RegistrationStatusPage />} />
+            <Route path="update-winners" element={<UpdateWinnersPage />} />
+          </Route>
+        </Route>
 
-      <Route path="/events" element={<EventsPage />} />
-      <Route element={<ProtectedRoute />}>
-        <Route path="/registration" element={<RegistrationPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/enrolled-events" element={<EnrolledEventsPage />} />
-      </Route>
-    </Routes>
+        {/* Placements page (public) */}
+        <Route path="/placements" element={<PlacementsPage />} />
+
+        {/* Auth routes (only accessible if not logged in) */}
+        <Route element={<UnprotectedRoute />}>
+          <Route path="/login" element={<LoginWrapper />} />
+          <Route
+            path="/signup"
+            element={<SignUpPage isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />}
+          />
+          <Route
+            path="/forgot-password"
+            element={<ForgotPassword isOpen={false} onClose={() => {}} onSwitchToLogin={() => {}} />}
+          />
+        </Route>
+
+        {/* Public pages */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/events" element={<EventsPage />} />
+
+        {/* Logged-in user routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/registration" element={<RegistrationPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/enrolled-events" element={<EnrolledEventsPage />} />
+        </Route>
+      </Routes>
+    </>
   );
 }

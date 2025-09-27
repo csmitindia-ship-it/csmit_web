@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 interface ProtectedRouteProps {
-  role?: 'admin' | 'student';
+  role?: 'admin' | 'student' | 'organizer' | ('admin' | 'student' | 'organizer')[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ role }) => {
@@ -17,8 +17,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ role }) => {
     return <Navigate to="/" replace />;
   }
 
-  if (role && user.role !== role) {
-    return <Navigate to="/" replace />;
+  if (role) {
+    const allowedRoles = Array.isArray(role) ? role : [role];
+    if (!user.role || !allowedRoles.includes(user.role)) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <Outlet />;

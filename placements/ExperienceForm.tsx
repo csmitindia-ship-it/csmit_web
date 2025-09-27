@@ -8,7 +8,7 @@ interface ExperienceFormProps {
 const ExperienceForm: React.FC<ExperienceFormProps> = ({ onClose }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [type, setType] = useState<'Placement' | 'Intern'>('Placement');
+  const [type, setType] = useState<'Placement' | 'Intern' | 'Off-Campus Placement' | 'Off-Campus Intern'>('Placement');
   const [year, setYear] = useState('');
   const [company, setCompany] = useState('');
   const [linkedin, setLinkedin] = useState('');
@@ -105,11 +105,13 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({ onClose }) => {
               <select
                 id="type"
                 value={type}
-                onChange={(e) => setType(e.target.value as 'Placement' | 'Intern')}
+                onChange={(e) => setType(e.target.value as 'Placement' | 'Intern' | 'Off-Campus Placement' | 'Off-Campus Intern')}
                 className="w-full bg-gray-800/80 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="Placement">Placement</option>
                 <option value="Intern">Intern</option>
+                <option value="Off-Campus Placement">Off-Campus Placement</option>
+                <option value="Off-Campus Intern">Off-Campus Intern</option>
               </select>
             </div>
             <div className="mb-4">

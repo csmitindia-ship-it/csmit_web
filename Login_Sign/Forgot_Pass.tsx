@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import photo from './photo.jpeg'; // Added import for photo
 
 interface ForgotPasswordProps {
   isOpen: boolean;
@@ -8,7 +7,7 @@ interface ForgotPasswordProps {
   onSwitchToLogin: () => void;
 }
 
-const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose, onSwitchToLogin }) => { // Added props
+export default function ForgotPassword({ isOpen, onClose, onSwitchToLogin }: ForgotPasswordProps) { // Added props
   if (!isOpen) return null; // Added conditional rendering
 
   const [email, setEmail] = useState('');
@@ -303,6 +302,5 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose, onSwit
       </div>
     </div>
   );
-};
+}
 
-export default ForgotPassword;

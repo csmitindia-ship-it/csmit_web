@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 
-module.exports = function(db, uploadEventPoster, eventPosterDir) {
+module.exports = function(db, uploadEventPoster, eventPosterDir, transporter) {
   router.post('/', async (req, res) => {
     const {
       symposiumName,
@@ -127,10 +127,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
     const { eventId } = req.params;
     try {
       const [registrations] = await db.execute(
-        `SELECT r.*, u.name, u.email, u.mobile, u.department, u.year, u.college 
-         FROM registrations r 
-         JOIN users u ON r.userId = u.id 
-         WHERE r.eventId = ?`, 
+        `SELECT r.*, u.id as userId, u.fullName as name, u.email, u.mobile, u.department, u.yearOfPassing, u.college \n         FROM registrations r \n         JOIN users u ON r.userEmail = u.email \n         JOIN verified_registrations vr ON u.id = vr.userId AND r.eventId = vr.eventId\n         WHERE r.eventId = ? AND vr.verified = true`, 
         [eventId]
       );
       res.json(registrations);
@@ -324,7 +321,7 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
       }
 
       await db.execute(
-        'INSERT INTO event_accounts (eventId, accountId) VALUES (?, ?)', 
+        'INSERT INTO event_accounts (eventId, accountId) VALUES (?, ?)',
         [eventId, accountId]
       );
       res.status(201).json({ message: 'Account assigned to event successfully.' });
@@ -400,6 +397,139 @@ module.exports = function(db, uploadEventPoster, eventPosterDir) {
     } catch (error) {
       console.error('Error deleting event:', error);
       res.status(500).json({ message: 'Failed to delete event.' });
+    }
+  });
+
+  router.get('/:eventId/registrations/search', async (req, res) => {
+    const { eventId } = req.params;
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email query parameter is required.' });
+    }
+
+    try {
+      const [registrations] = await db.execute(
+        `SELECT r.*, u.id as userId, u.fullName, u.email, u.mobile, u.college, u.department, u.yearOfPassing 
+         FROM registrations r 
+         JOIN users u ON r.userEmail = u.email 
+         WHERE r.eventId = ? AND u.email = ?`, 
+        [eventId, email]
+      );
+
+      if (registrations.length === 0) {
+        return res.status(404).json({ message: 'User not found or not registered for this event.' });
+      }
+
+      res.json(registrations[0]);
+    } catch (error) {
+      console.error('Error searching for registration:', error);
+      res.status(500).json({ message: 'Failed to search for registration.' });
+    }
+  });
+
+  router.post('/:eventId/rounds/:roundNumber/eligible', async (req, res) => {
+    const { eventId, roundNumber } = req.params;
+    const { userId, status } = req.body;
+
+    if (!userId || status === undefined) {
+      return res.status(400).json({ message: 'userId and status are required.' });
+    }
+
+    if (![0, 1].includes(status)) {
+      return res.status(400).json({ message: 'Status must be 0 or 1.' });
+    }
+
+    const roundColumn = `round${roundNumber}`;
+    if (!['round1', 'round2', 'round3'].includes(roundColumn)) {
+      return res.status(400).json({ message: 'Invalid round number.' });
+    }
+
+    try {
+      const [[user]] = await db.execute('SELECT email FROM users WHERE id = ?', [userId]);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+      const userEmail = user.email;
+
+      const [result] = await db.execute(
+        `UPDATE registrations SET ${roundColumn} = ? WHERE userEmail = ? AND eventId = ?`,
+        [status, userEmail, eventId]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Registration not found for this user and event.' });
+      }
+
+      res.status(200).json({ message: `Round ${roundNumber} status updated successfully.` });
+    } catch (error) {
+      console.error('Error updating round status:', error);
+      res.status(500).json({ message: 'Failed to update round status.' });
+    }
+  });
+
+  router.post('/:eventId/rounds/:roundNumber/notify', async (req, res) => {
+    const { eventId, roundNumber } = req.params;
+    const { eligibleMessage, ineligibleMessage } = req.body;
+
+    try {
+      const [registrations] = await db.execute(
+        `SELECT r.*, u.email 
+         FROM registrations r 
+         JOIN users u ON r.userEmail = u.email 
+         WHERE r.eventId = ?`,
+        [eventId]
+      );
+
+      if (registrations.length === 0) {
+        return res.status(404).json({ message: 'No registrations found for this event.' });
+      }
+
+      const symposiumName = registrations[0].symposium;
+      let eventTable;
+      if (symposiumName === 'Enigma') {
+        eventTable = 'enigma_events';
+      } else if (symposiumName === 'Carteblanche') {
+        eventTable = 'carte_blanche_events';
+      } else {
+        return res.status(400).json({ message: 'Invalid symposium name found in registration.' });
+      }
+
+      const [[event]] = await db.execute(`SELECT eventName FROM ${eventTable} WHERE id = ?`, [eventId]);
+      if (!event) {
+        return res.status(404).json({ message: 'Event not found.' });
+      }
+
+      const roundColumn = `round${roundNumber}`;
+      const eligibleUsers = registrations.filter(r => r[roundColumn] === 1);
+      const ineligibleUsers = registrations.filter(r => r[roundColumn] === 0);
+
+      const emailSubject = `Update for ${event.eventName} - Round ${roundNumber}`;
+
+      if (eligibleUsers.length > 0) {
+        const eligibleEmails = eligibleUsers.map(u => u.email);
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: eligibleEmails.join(', '),
+          subject: emailSubject,
+          text: eligibleMessage,
+        });
+      }
+
+      if (ineligibleUsers.length > 0) {
+        const ineligibleEmails = ineligibleUsers.map(u => u.email);
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: ineligibleEmails.join(', '),
+          subject: emailSubject,
+          text: ineligibleMessage,
+        });
+      }
+
+      res.status(200).json({ message: 'Notifications sent successfully.' });
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      res.status(500).json({ message: 'Failed to send notifications.' });
     }
   });
 

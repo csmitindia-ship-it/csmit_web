@@ -91,7 +91,7 @@ const AccountDetailsPage: React.FC = () => {
     setModalMessage('Are you sure you want to delete this account detail?');
     setModalOnConfirm(() => async () => {
       try {
-        await axios.delete(`http://localhost:5001/admin/accounts/${id}`);
+        await axios.delete(`/api/admin/accounts/${id}`);
         setSuccess('Account details deleted successfully!');
         fetchAccountDetails();
         setIsModalOpen(false); // Close modal after successful deletion
@@ -127,7 +127,7 @@ const AccountDetailsPage: React.FC = () => {
               name="accountName"
               value={form.accountName}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white"
+              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-200 text-black"
               required
             />
           </div>
@@ -139,7 +139,7 @@ const AccountDetailsPage: React.FC = () => {
               name="bankName"
               value={form.bankName}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white"
+              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-200 text-black"
               required
             />
           </div>
@@ -151,7 +151,7 @@ const AccountDetailsPage: React.FC = () => {
               name="accountNumber"
               value={form.accountNumber}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white"
+              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-200 text-black"
               required
             />
           </div>
@@ -163,7 +163,7 @@ const AccountDetailsPage: React.FC = () => {
               name="ifscCode"
               value={form.ifscCode}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white"
+              className="mt-1 block w-full p-2 border border-gray-600 rounded-md bg-gray-200 text-black"
               required
             />
           </div>

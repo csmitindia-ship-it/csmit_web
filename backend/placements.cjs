@@ -55,6 +55,16 @@ module.exports = function(db, upload) {
     }
   });
 
+  router.get('/admin/approved-experiences', async (req, res) => {
+    try {
+      const [rows] = await db.execute('SELECT * FROM experiences WHERE status = ?', ['approved']);
+      res.json(rows);
+    } catch (error) {
+      console.error('Error fetching approved experiences:', error);
+      res.status(500).json({ message: 'Failed to fetch approved experiences.' });
+    }
+  });
+
   router.post('/admin/update-experience-status', async (req, res) => {
     const { id, status } = req.body;
     if (!id || !status) {

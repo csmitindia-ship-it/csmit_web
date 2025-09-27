@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Import useAuth
-import photo from './photo.jpeg'; // Added import for photo
 
 interface LoginPageProps {
   isOpen: boolean;
@@ -10,34 +9,37 @@ interface LoginPageProps {
   onSwitchToForgotPassword: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp, onSwitchToForgotPassword }) => {
-  if (!isOpen) return null; // Added conditional rendering
+export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchToForgotPassword }: LoginPageProps) {
+  if (!isOpen) return null;
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth(); // Use the login function from AuthContext
+  const { login} = useAuth();
+
+
+
 
   const handleSwitchToSignUp = (e: React.MouseEvent) => {
     e.preventDefault();
-    onSwitchToSignUp(); // Use prop function
+    onSwitchToSignUp();
   };
 
   const handleSwitchToForgotPassword = (e: React.MouseEvent) => {
     e.preventDefault();
-    onSwitchToForgotPassword(); // Use prop function
+    onSwitchToForgotPassword();
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (email === 'csmitindia@gmail.com' && password === 'Csmit@2025') {
-      login(null, email, 'admin'); // Call login from AuthContext
-      navigate('/admin'); // Navigate to admin page after login
+      login(null, email, 'admin');
+      navigate('/admin/manage-events');
       onClose();
     } else {
       try {
-        const response = await fetch('http://localhost:5001/auth/login', {
+        const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -48,8 +50,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
         const data = await response.json();
 
         if (response.ok) {
-          login(data.user.id, data.user.email, 'student', data.user.fullName);
-          navigate('/');
+          if (data.user.role === 'organizer') {
+            login(data.user.id, data.user.email, 'organizer', data.user.name);
+            navigate('/organizer');
+          } else {
+            login(data.user.id, data.user.email, 'student', data.user.fullName);
+            navigate('/');
+          }
           onClose();
         } else {
           alert(data.message || 'Invalid credentials. Please try again.');
@@ -63,15 +70,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" // Changed to fixed overlay
-      onClick={onClose} // Close modal when clicking outside
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
     >
       <div 
         className="relative w-full max-w-md bg-gray-900/80 border border-purple-500/30 rounded-2xl p-8 shadow-2xl shadow-purple-500/20 z-10"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        onClick={(e) => e.stopPropagation()}
       >
         <button 
-          onClick={onClose} // Use prop function
+          onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-purple-400 transition-colors duration-300"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -81,7 +88,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
 
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-white">CSMIT</h2>
-          <p className="text-purple-300">Member & Admin Login</p>
+          <p className="text-purple-300">Member, Admin & Organizer Login</p>
         </div>
 
         <form className="space-y-6" onSubmit={handleLogin}>
@@ -143,6 +150,4 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose, onSwitchToSignUp
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}

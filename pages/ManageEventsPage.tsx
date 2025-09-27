@@ -317,7 +317,7 @@ const App: React.FC = () => {
     console.log('Attempting to remove account with eventId:', eventId, 'and accountId:', accountId);
     try {
       const response = await fetch(
-        `http://localhost:5001/events/${eventId}/accounts/${accountId}`,
+        `/api/events/${eventId}/accounts/${accountId}`,
         { method: 'DELETE' }
       );
       if (!response.ok) {
@@ -405,9 +405,9 @@ const App: React.FC = () => {
                       >
                         <option value="">Select Category</option>
                         <option value="Workshop">Workshop</option>
-                        <option value="Webinar">Paper Presentation</option>
-                        <option value="Competition">Technical Events</option>
-                        <option value="Festival">Non-Technical Events</option>
+                        <option value="Paper Presentation">Paper Presentation</option>
+                        <option value="Technical Events">Technical Events</option>
+                        <option value="Non-Technical Events">Non-Technical Events</option>
                         <option value="Other">Other</option>
                       </select>
                       <input

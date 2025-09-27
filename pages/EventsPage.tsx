@@ -52,11 +52,25 @@ const EventsPage: React.FC = () => {
   const [selectedWorkshopEvent, setSelectedWorkshopEvent] = useState<Event | null>(null);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [isCartActionInProgress, setIsCartActionInProgress] = useState(false);
+  const [symposiumStatus, setSymposiumStatus] = useState<any[]>([]);
 
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
+  const isSymposiumOpen = (symposiumName: 'Enigma' | 'Carteblanche') => {
+    const symposium = symposiumStatus.find(s => s.symposiumName === symposiumName);
+    return symposium ? symposium.isOpen === 1 : false;
+  };
+
   const handleViewDetails = (event: Event) => {
+    if (!isSymposiumOpen(activeSymposium)) {
+      setModalContent({
+        title: 'Not Yet Started',
+        message: 'This symposium has not started yet. Full details will be available soon.',
+      });
+      setIsModalOpen(true);
+      return;
+    }
     setSelectedEvent(event);
     setIsModalOpen(true);
   };
@@ -65,7 +79,7 @@ const EventsPage: React.FC = () => {
     setIsLoading(true);
     console.log('EventsPage: Fetching events...');
     try {
-      const response = await fetch('http://localhost:5001/events');
+            const response = await fetch('http://localhost:5001/events');
       const data: Event[] = await response.json();
       setEvents(data);
       console.log('EventsPage: Events fetched successfully.', data);
@@ -74,6 +88,16 @@ const EventsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
       console.log('EventsPage: Finished fetching events.');
+    }
+  };
+
+  const fetchSymposiumStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/symposium/status');
+      const data = await response.json();
+      setSymposiumStatus(data);
+    } catch (error) {
+      console.error('Error fetching symposium status:', error);
     }
   };
 
@@ -110,6 +134,7 @@ const EventsPage: React.FC = () => {
   useEffect(() => {
     console.log('EventsPage: useEffect - initial render or dependency change.');
     fetchEvents();
+    fetchSymposiumStatus();
     if (isLoggedIn) {
       fetchRegisteredEvents();
       fetchCartItems();
@@ -402,6 +427,7 @@ const EventsPage: React.FC = () => {
                 const isRegistrationClosed = new Date() > new Date(event.lastDateForRegistration);
                 const isRegistered = registeredEvents.includes(event.id);
                 const isInCart = cartItems.some(item => item.eventId === event.id);
+                const symposiumStarted = isSymposiumOpen(activeSymposium);
 
                 return (
                   <div
@@ -426,45 +452,49 @@ const EventsPage: React.FC = () => {
                       <p className="text-purple-300 text-sm font-medium mb-3">{event.eventCategory}</p>
                       <p className="text-gray-300 text-base mb-4 flex-grow">{event.eventDescription.substring(0, 100)}...</p>
 
-                      <EventCountdown lastDateForRegistration={event.lastDateForRegistration} />
+                      {symposiumStarted && (
+                        <>
+                          <EventCountdown lastDateForRegistration={event.lastDateForRegistration} />
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isRegistered) return;
-                          if (event.registrationFees === 0) {
-                            handleFreeRegistration(event);
-                          } else {
-                            if (isInCart) {
-                              handleRemoveFromCart(event.id);
-                            } else {
-                              handleAddToCart(event);
-                            }
-                          }
-                        }}
-                        disabled={isRegistrationClosed || isCartActionInProgress || isRegistered}
-                        className={`mt-4 inline-block px-4 py-2 font-semibold rounded-lg transition ${
-                          isRegistered
-                            ? 'bg-gray-600 text-white cursor-not-allowed'
-                            : isRegistrationClosed
-                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                            : event.registrationFees === 0
-                            ? 'bg-green-600 text-white hover:bg-green-700'
-                            : isInCart
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-purple-600 text-white hover:bg-purple-700'
-                        }`}
-                      >
-                        {isRegistered
-                          ? 'Registered'
-                          : isRegistrationClosed
-                          ? 'Registration Closed'
-                          : event.registrationFees === 0
-                          ? 'Register for Free'
-                          : isInCart
-                          ? 'Remove from Cart'
-                          : 'Add to Cart'}
-                      </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isRegistered) return;
+                              if (event.registrationFees === 0) {
+                                handleFreeRegistration(event);
+                              } else {
+                                if (isInCart) {
+                                  handleRemoveFromCart(event.id);
+                                } else {
+                                  handleAddToCart(event);
+                                }
+                              }
+                            }}
+                            disabled={isRegistrationClosed || isCartActionInProgress || isRegistered}
+                            className={`mt-4 inline-block px-4 py-2 font-semibold rounded-lg transition ${
+                              isRegistered
+                                ? 'bg-gray-600 text-white cursor-not-allowed'
+                                : isRegistrationClosed
+                                ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                                : event.registrationFees === 0
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : isInCart
+                                ? 'bg-red-600 text-white hover:bg-red-700'
+                                : 'bg-purple-600 text-white hover:bg-purple-700'
+                            }`}
+                          >
+                            {isRegistered
+                              ? 'Registered'
+                              : isRegistrationClosed
+                              ? 'Registration Closed'
+                              : event.registrationFees === 0
+                              ? 'Register for Free'
+                              : isInCart
+                              ? 'Remove from Cart'
+                              : 'Add to Cart'}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

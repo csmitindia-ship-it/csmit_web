@@ -16,6 +16,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
 }));
 
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    req.url = req.url.replace('/api', '');
+  }
+  next();
+});
+
 // --- File Upload Setup ---
 const pdfDir = path.join(__dirname, 'uploads/pdfs');
 if (!fs.existsSync(pdfDir)){
@@ -174,7 +181,6 @@ async function createTablesIfNotExists() {
       eventId INT NOT NULL,
       accountId INT NOT NULL,
       PRIMARY KEY (eventId, accountId),
-      FOREIGN KEY (eventId) REFERENCES enigma_events(id) ON DELETE CASCADE,
       FOREIGN KEY (accountId) REFERENCES accounts(id) ON DELETE CASCADE
     );
   `;
@@ -257,6 +263,33 @@ async function createTablesIfNotExists() {
     await db.execute(createVerifiedRegistrationsTableQuery);
     console.log('Verified registrations table is ready.');
 
+    const createOrganizersTableQuery = `
+      CREATE TABLE IF NOT EXISTS organizers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        mobile VARCHAR(20) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await db.execute(createOrganizersTableQuery);
+    console.log('Organizers table is ready.');
+
+    const createRoundWinnersTableQuery = `
+      CREATE TABLE IF NOT EXISTS round_winners (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        eventId INT NOT NULL,
+        roundNumber INT NOT NULL,
+        userId INT NOT NULL,
+        status VARCHAR(255) NOT NULL DEFAULT 'eligible',
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `;
+    await db.execute(createRoundWinnersTableQuery);
+    console.log('Round winners table is ready.');
+
     const createSymposiumStatusTableQuery = `
       CREATE TABLE IF NOT EXISTS symposium_status (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -269,14 +302,21 @@ async function createTablesIfNotExists() {
     await db.execute(createSymposiumStatusTableQuery);
     console.log('Symposium status table is ready.');
 
-    const symposiums = ['Enigma', 'Carteblanche'];
-    for (const sym of symposiums) {
-      const [rows] = await db.execute('SELECT * FROM symposium_status WHERE symposiumName = ?', [sym]);
-      if (rows.length === 0) {
-        await db.execute('INSERT INTO symposium_status (symposiumName) VALUES (?)', [sym]);
-      }
+    // Check if startDate column exists and add it if it doesn't
+    const [columns] = await db.execute(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = 'csmit_db' 
+      AND TABLE_NAME = 'symposium_status' 
+      AND COLUMN_NAME = 'startDate'
+    `);
+
+    if (columns.length === 0) {
+      await db.execute('ALTER TABLE symposium_status ADD COLUMN startDate DATE');
+      console.log('Added startDate column to symposium_status table.');
     }
-    console.log('Initial symposiums checked/inserted.');
+
+    const symposiums = ['Enigma', 'Carteblanche'];
   } catch (error) {
     console.error('Error creating tables:', error);
     process.exit(1);
@@ -297,22 +337,24 @@ async function startServer() {
 
   // --- Routers ---
   const authRouter = require('./auth.cjs')(db, transporter);
-  const eventsRouter = require('./events.cjs')(db, uploadEventPoster, eventPosterDir);
+  const eventsRouter = require('./events.cjs')(db, uploadEventPoster, eventPosterDir, transporter);
   const placementsRouter = require('./placements.cjs')(db, uploadPdf);
   const accountsRouter = require('./accounts.cjs')(db);
   const registrationsRouter = require('./registrations.cjs')(db, uploadTransactionScreenshot);
   const cartRouter = require('./cart.cjs')(db);
   const verificationRouter = require('./verification.cjs')(db);
   const symposiumRouter = require('./symposium.cjs')(db);
+  const organizerRouter = require('./organizer.cjs')(db);
 
   app.use('/auth', authRouter);
   app.use('/events', eventsRouter);
-  app.use(placementsRouter);
+  app.use('/placements', placementsRouter);
   app.use('/admin/accounts', accountsRouter);
   app.use('/registrations', registrationsRouter);
   app.use('/cart', cartRouter);
   app.use('/verification', verificationRouter);
-  app.use('/api/symposium', symposiumRouter);
+  app.use('/symposium', symposiumRouter);
+  app.use('/organizers', organizerRouter);
 
   // --- Start Server ---
   app.use((req, res, next) => {

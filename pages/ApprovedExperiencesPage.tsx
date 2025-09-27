@@ -26,10 +26,14 @@ const ApprovedExperiencesPage: React.FC = () => {
   const fetchExperiences = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/experiences');
-      const data = await response.json();
-      const approved = data.filter((exp: Experience) => exp.status === 'approved');
-      setApprovedExperiences(approved);
+      const response = await fetch('/api/placements/admin/approved-experiences');
+      if (response.ok) {
+        const data = await response.json();
+        setApprovedExperiences(data);
+      } else {
+        console.error('Error fetching experiences:', response.statusText);
+        setApprovedExperiences([]);
+      }
     } catch (err) {
       console.error('Error fetching experiences:', err);
     } finally {
@@ -46,20 +50,20 @@ const ApprovedExperiencesPage: React.FC = () => {
     setModalMessage('Are you sure you want to delete this experience?');
     setModalOnConfirm(() => async () => {
       try {
-        const response = await fetch(`http://localhost:5001/admin/delete-experience/${id}`, {
+        const response = await fetch(`/api/placements/admin/delete-experience/${id}`, {
           method: 'DELETE',
         });
         const result = await response.json();
 
-        if (result.message) {
+        if (response.ok) {
           fetchExperiences(); // Re-fetch to update list
           setModalTitle('Success');
           setModalMessage('Experience deleted successfully!');
           setShowConfirmButton(false);
           setIsModalOpen(true);
-        } else if (result.error) {
+        } else {
           setModalTitle('Error');
-          setModalMessage(`Error: ${result.error}`);
+          setModalMessage(result.message || 'Failed to delete experience.');
           setShowConfirmButton(false);
           setIsModalOpen(true);
         }

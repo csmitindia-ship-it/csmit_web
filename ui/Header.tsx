@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../Photos/Logo.png";
 import { useAuth } from "../context/AuthContext"; // Import useAuth
 import ThemedModal from "../components/ThemedModal";
+import { FiLogIn, FiUserPlus, FiLogOut } from 'react-icons/fi';
 
 interface HeaderProps {
   setIsLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>; // Re-added
@@ -29,10 +30,8 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
       }
     };
 
-    if (user?.role === "admin") {
-      fetchSymposiumStatus();
-    }
-  }, [user]);
+    fetchSymposiumStatus();
+  }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
@@ -102,8 +101,14 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
   };
 
   const getSymposiumStatus = (symposiumName: string) => {
+    if (!Array.isArray(symposiumStatus)) return false;
     const symposium = symposiumStatus.find(s => s.symposiumName === symposiumName);
     return symposium ? symposium.isOpen === 1 : false;
+  };
+
+  const anySymposiumOpen = () => {
+    if (!Array.isArray(symposiumStatus)) return false;
+    return symposiumStatus.some(s => s.isOpen === 1);
   };
 
   return (
@@ -171,6 +176,15 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
           >
             Placements
           </a>
+          {user?.role === 'admin' && (
+            <a
+              href="/admin/organizer"
+              onClick={(e) => { e.preventDefault(); navigate("/admin/organizer"); }}
+              className="text-white hover:text-purple-400 transition"
+            >
+              Organizer
+            </a>
+          )}
           {user?.role === 'admin' && (
             <>
               <button
@@ -242,7 +256,7 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
               </ThemedModal>
             </>
           )}
-          {user && user.role !== 'admin' && (
+          {user && user.role !== 'admin' && anySymposiumOpen() && (
             <a
               href="/enrolled-events"
               onClick={(e) => { e.preventDefault(); navigate("/enrolled-events"); }}
@@ -251,7 +265,7 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
               My Events
             </a>
           )}
-          {user && user.role !== 'admin' && (
+          {user && user.role !== 'admin' && anySymposiumOpen() && (
             <a
               href="/cart"
               onClick={(e) => { e.preventDefault(); navigate("/cart"); }}
@@ -272,6 +286,8 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
                     navigate('/admin');
                   } else if (user.role === 'student') {
                     navigate('/student-dashboard'); // Assuming a student dashboard route
+                  } else if (user.role === 'organizer') {
+                    navigate('/admin/view-registrations');
                   }
                 }}
                 className="px-4 py-2 text-sm border border-purple-400 text-purple-400 rounded-md hover:bg-purple-400 hover:text-black transition"
@@ -280,8 +296,9 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
               </button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                className="flex items-center px-4 py-2 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600 transition"
               >
+                <FiLogOut className="mr-2" />
                 Logout
               </button>
             </>
@@ -289,14 +306,16 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
             <>
               <button
                 onClick={() => setIsLoginModalOpen(true)} // Changed to set state
-                className="px-4 py-2 text-sm border border-purple-400 text-purple-400 rounded-md hover:bg-purple-400 hover:text-black transition"
+                className="flex items-center px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
               >
+                <FiLogIn className="mr-2" />
                 Login
               </button>
               <button
                 onClick={() => setIsSignUpModalOpen(true)} // Changed to set state
-                className="px-4 py-2 text-sm bg-purple-500 text-white rounded-md hover:bg-purple-600 transition"
+                className="flex items-center px-4 py-2 text-sm border border-purple-400 text-purple-400 rounded-md hover:bg-purple-400 hover:text-black transition"
               >
+                <FiUserPlus className="mr-2" />
                 Sign Up
               </button>
             </>

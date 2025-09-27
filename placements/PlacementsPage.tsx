@@ -32,7 +32,7 @@ const PlacementsPage: React.FC = () => {
   const fetchExperiences = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/experiences');
+      const response = await fetch('/api/placements/experiences');
       const data = await response.json();
       const approved = data.filter((exp: Experience) => exp.status === 'approved');
       setApprovedExperiences(approved);
