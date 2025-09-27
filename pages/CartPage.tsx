@@ -28,9 +28,11 @@ const CartPage: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   useEffect(() => {
     const fetchCartItems = async () => {
@@ -39,7 +41,7 @@ const CartPage: React.FC = () => {
         const response = await axios.get(`http://localhost:5001/cart/${user.id}`);
         setCartItems(response.data);
       } catch (error) {
-        console.error('Error fetching cart items:', error);
+        showModal('Error', 'Error fetching cart items.');
       }
       setLoading(false);
     };
@@ -55,7 +57,7 @@ const CartPage: React.FC = () => {
       });
       setCartItems(cartItems.filter((item) => item.cartId !== cartId));
     } catch (error) {
-      console.error('Error removing item from cart:', error);
+      showModal('Error', 'Error removing item from cart.');
     }
   };
 
@@ -74,20 +76,14 @@ const CartPage: React.FC = () => {
             userEmail: user.email,
             eventId: item.eventId,
           });
-          // Remove from cart on successful registration
           setCartItems(prevItems => prevItems.filter(i => i.cartId !== item.cartId));
         } catch (error) {
-          console.error(`Error registering for event ${item.eventId}:`, error);
-          setModalTitle('Error');
-          setModalMessage(`Failed to register for ${item.eventDetails.eventName}. You might be already registered.`);
-          setIsModalOpen(true);
+          showModal('Error', `Failed to register for ${item.eventDetails.eventName}. You might be already registered.`);
         }
       }
       if (cartItems.length > 0 && freeEvents.length === cartItems.length) {
         window.dispatchEvent(new CustomEvent('registrationComplete'));
-        setModalTitle('Success');
-        setModalMessage('Successfully registered for all free events!');
-        setIsModalOpen(true);
+        showModal('Success', 'Successfully registered for all free events!');
       }
     }
   };
@@ -95,8 +91,6 @@ const CartPage: React.FC = () => {
   const handleRegistrationSuccess = async () => {
     if (!user) return;
 
-    // After successful payment and registration for paid events,
-    // we can also register for the free events.
     const freeEvents = cartItems.filter(item => item.eventDetails.registrationFees === 0);
     for (const item of freeEvents) {
       try {
@@ -105,26 +99,23 @@ const CartPage: React.FC = () => {
           eventId: item.eventId,
         });
       } catch (error) {
-        console.error(`Error registering for free event ${item.eventId}:`, error);
+        showModal('Error', `Error registering for free event ${item.eventId}.`);
       }
     }
 
-    // Clear the cart
     for (const item of cartItems) {
       try {
         await axios.delete(`http://localhost:5001/cart/${item.cartId}`, {
           data: { userEmail: user.email },
         });
       } catch (error) {
-        console.error(`Error removing item from cart ${item.cartId}:`, error);
+        showModal('Error', `Error removing item from cart ${item.cartId}.`);
       }
     }
     setCartItems([]);
     setShowRegistrationForm(false);
     window.dispatchEvent(new CustomEvent('registrationComplete'));
-    setModalTitle('Success');
-    setModalMessage('Registration successful for all events!');
-    setIsModalOpen(true);
+    showModal('Success', 'Registration successful for all events!');
   };
 
   return (
@@ -149,7 +140,6 @@ const CartPage: React.FC = () => {
           fontFamily: "'Poppins', sans-serif",
         }}
       >
-        {/* Background Image Layer */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-fixed"
           style={{
@@ -157,7 +147,6 @@ const CartPage: React.FC = () => {
           }}
         ></div>
 
-        {/* Overlay Layer */}
         <div className="absolute inset-0 bg-black/70 z-0"></div>
 
         <Header setIsLoginModalOpen={setIsLoginModalOpen} setIsSignUpModalOpen={setIsSignUpModalOpen}  />
@@ -212,10 +201,10 @@ const CartPage: React.FC = () => {
             </div>
         </main>
         <ThemedModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          title={modalTitle} 
-          message={modalMessage} 
+          isOpen={modal.isOpen} 
+          onClose={() => setModal({ isOpen: false, title: '', message: '' })} 
+          title={modal.title} 
+          message={modal.message} 
         />
       </div>
     </>

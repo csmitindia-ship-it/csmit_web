@@ -71,7 +71,6 @@ let db;
 async function connectToDatabase() {
   try {
     db = await mysql.createConnection(dbConfig);
-    console.log('Connected to MySQL database.');
     await createTablesIfNotExists();
   } catch (error) {
     console.error('Error connecting to MySQL database:', error);
@@ -236,32 +235,19 @@ async function createTablesIfNotExists() {
 
   try {
     await db.execute(createUserTableQuery);
-    console.log('Users table is ready.');
     await db.execute(createExperienceTableQuery);
-    console.log('Experiences table is ready.');
     await db.execute('DROP TABLE IF EXISTS events;');
-    console.log('Old events table dropped.');
     await db.execute(createEnigmaEventsTableQuery);
-    console.log('Enigma events table is ready.');
     await db.execute(createCarteBlancheEventsTableQuery);
-    console.log('Carte Blanche events table is ready.');
     await db.execute(createEnigmaRoundsTableQuery);
-    console.log('Enigma rounds table is ready.');
     await db.execute(createCarteBlancheRoundsTableQuery);
-    console.log('Carte Blanche rounds table is ready.');
     await db.execute(createAccountsTableQuery);
-    console.log('Accounts table is ready.');
     await db.execute(createEventAccountsTableQuery);
-    console.log('Event accounts table is ready.');
     
     await db.execute(createRegistrationsTableQuery);
-    console.log('Registrations table is ready.');
     await db.execute(createEnigmaNonWorkshopRegistrationsTableQuery);
-    console.log('Enigma non-workshop registrations table is ready.');
     await db.execute(createCartTableQuery);
-    console.log('Cart table is ready.');
     await db.execute(createVerifiedRegistrationsTableQuery);
-    console.log('Verified registrations table is ready.');
 
     const createOrganizersTableQuery = `
       CREATE TABLE IF NOT EXISTS organizers (

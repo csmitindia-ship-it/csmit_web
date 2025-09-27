@@ -18,9 +18,6 @@ export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchT
   const navigate = useNavigate();
   const { login} = useAuth();
 
-
-
-
   const handleSwitchToSignUp = (e: React.MouseEvent) => {
     e.preventDefault();
     onSwitchToSignUp();

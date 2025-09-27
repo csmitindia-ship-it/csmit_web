@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
 import { Link } from 'react-router-dom';
 import backgroundImage from '../Login_Sign/photo.jpeg';
+import ThemedModal from '../components/ThemedModal';
 
 interface Round {
   roundNumber: number;
@@ -42,6 +43,11 @@ const EnrolledEventsPage: React.FC = () => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, isLoggedIn, loading: authLoading } = useAuth();
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   useEffect(() => {
     const fetchEnrolledEvents = async () => {
@@ -55,7 +61,7 @@ const EnrolledEventsPage: React.FC = () => {
         const data = await response.json();
         setRegistrations(Array.isArray(data) ? data : [data]);
       } catch (error) {
-        console.error('Error fetching enrolled events:', error);
+        showModal('Error', 'Error fetching enrolled events.');
       } finally {
         setIsLoading(false);
       }
@@ -100,7 +106,12 @@ const EnrolledEventsPage: React.FC = () => {
         fontFamily: "'Poppins', sans-serif",
       }}
     >
-      {/* Background Image Layer */}
+      <ThemedModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ isOpen: false, title: '', message: '' })}
+        title={modal.title}
+        message={modal.message}
+      />
       <div
         className="absolute inset-0 bg-cover bg-center bg-fixed"
         style={{
@@ -108,7 +119,6 @@ const EnrolledEventsPage: React.FC = () => {
         }}
       ></div>
 
-      {/* Overlay Layer */}
       <div className="absolute inset-0 bg-black/70 z-0"></div>
 
       <Header setIsLoginModalOpen={() => {}} setIsSignUpModalOpen={() => {}} />
@@ -121,7 +131,7 @@ const EnrolledEventsPage: React.FC = () => {
             <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-8">
               {registrations.map((registration) => {
                 if (!registration.event) {
-                  return null; // Don't render card if event details are missing
+                  return null;
                 }
 
                 const hasBeenRejected = Number(registration.round1) === 0 || Number(registration.round2) === 0 || Number(registration.round3) === 0;

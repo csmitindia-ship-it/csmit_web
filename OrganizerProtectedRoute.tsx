@@ -8,6 +8,7 @@ interface OrganizerProtectedRouteProps {
 
 const OrganizerProtectedRoute: React.FC<OrganizerProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  console.log('OrganizerProtectedRoute user:', user);
 
   if (loading) {
     return <div>Loading...</div>; // Or a spinner

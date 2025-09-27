@@ -32,7 +32,7 @@ interface WorkshopRegistrationFormProps {
   onCancel: () => void;
 }
 
-const WorkshopRegistrationForm: React.FC<WorkshopRegistrationFormProps> = ({ userId, userName, userEmail, paidEvents, onRegistrationSuccess, onCancel }) => {
+const WorkshopRegistrationForm: React.FC<WorkshopRegistrationFormProps> = ({ userId, userName, paidEvents, onRegistrationSuccess, onCancel }) => {
   const [transactionId, setTransactionId] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [transactionScreenshot, setTransactionScreenshot] = useState<File | null>(null);

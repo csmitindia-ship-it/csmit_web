@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-// --- Data Interfaces ---
 type Round = {
   roundNumber: number;
   roundDetails: string;
@@ -35,7 +34,6 @@ type Event = {
   assignedAccounts?: AccountDetail[];
 };
 
-// --- Helper Components ---
 const ThemedModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -137,7 +135,6 @@ const App: React.FC = () => {
   const [selectedAccountToAssign, setSelectedAccountToAssign] = useState<AccountDetail | null>(null);
   const [isAssignAccountModalOpen, setIsAssignAccountModalOpen] = useState(false);
 
-  // Fetch accounts
   const fetchAccountDetails = async () => {
     try {
       const response = await fetch('http://localhost:5001/admin/accounts');
@@ -153,7 +150,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Fetch events
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
@@ -195,7 +191,6 @@ const App: React.FC = () => {
     fetchAccountDetails();
   }, []);
 
-  // Input handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'number' ? parseInt(value, 10) : value;
@@ -373,7 +368,6 @@ const App: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                {/* Add/Edit Event Form */}
                 <div>
                   <h3 className="text-2xl font-bold text-white mb-6">{editingEvent ? 'Edit' : 'Add'} Event</h3>
                   <form onSubmit={handleSaveEvent} className="space-y-6">
@@ -502,7 +496,6 @@ const App: React.FC = () => {
                   </form>
                 </div>
 
-                {/* Event List */}
                 <div>
                   <h3 className="text-2xl font-bold text-white mb-6">Events</h3>
                   {filteredEvents.map((event) => (
@@ -531,7 +524,7 @@ const App: React.FC = () => {
                           >
                             Assign Account
                           </button>
-                          <Link to={`/admin/events/registrations/${event.id}`}>
+                          <Link to={`/admin/events/registrations/${event.id}?symposium=${event.symposiumName}`}>
                             <button className="px-2 py-1 bg-yellow-600 rounded-md text-sm">
                               View Registrations
                             </button>
@@ -572,7 +565,6 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Assign Account Modal */}
       <ThemedModal
         isOpen={isAssignAccountModalOpen}
         onClose={() => {
@@ -592,11 +584,7 @@ const App: React.FC = () => {
           placeholder="Select Account"
         />
       </ThemedModal>
-
-      
-
-      {/* Generic Modal */}
-      <ThemedModal
+    <ThemedModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={modalTitle}

@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-module.exports = function(db, uploadTransactionScreenshot) {
-  // Get all registrations
+module.exports = function (db, uploadTransactionScreenshot) {
   router.get('/all', async (req, res) => {
     try {
       const [registrations] = await db.execute(`
@@ -18,86 +17,151 @@ module.exports = function(db, uploadTransactionScreenshot) {
     }
   });
 
-  // Check if transaction ID already exists
   router.get('/check-transaction/:transactionId', async (req, res) => {
     const { transactionId } = req.params;
     try {
-      const [existing] = await db.execute('SELECT id FROM registrations WHERE transactionId = ?', [transactionId]);
+      const [existing] = await db.execute(
+        'SELECT id FROM registrations WHERE transactionId = ?',
+        [transactionId]
+      );
       if (existing.length > 0) {
-        return res.status(200).json({ exists: true, message: 'Transaction ID already used.' });
+        return res
+          .status(200)
+          .json({ exists: true, message: 'Transaction ID already used.' });
       }
-      res.status(200).json({ exists: false, message: 'Transaction ID is available.' });
+      res
+        .status(200)
+        .json({ exists: false, message: 'Transaction ID is available.' });
     } catch (error) {
       console.error('Error checking transaction ID:', error);
       res.status(500).json({ message: 'Failed to check transaction ID.' });
     }
   });
 
-  // POST a new registration (with transaction details for workshops)
-  router.post('/', uploadTransactionScreenshot.single('transactionScreenshot'), async (req, res) => {
-    const { userId, eventIds, transactionId, transactionUsername, transactionTime, transactionDate, transactionAmount, mobileNumber } = req.body;
-    const transactionScreenshot = req.file ? req.file.buffer : null;
-    const parsedEventIds = JSON.parse(eventIds);
+  router.post(
+    '/',
+    uploadTransactionScreenshot.single('transactionScreenshot'),
+    async (req, res) => {
+      const {
+        userId,
+        eventIds,
+        transactionId,
+        transactionUsername,
+        transactionTime,
+        transactionDate,
+        transactionAmount,
+        mobileNumber,
+      } = req.body;
 
-    if (!userId || !parsedEventIds || !Array.isArray(parsedEventIds) || parsedEventIds.length === 0 || !transactionId || !transactionUsername || !transactionTime || !transactionDate || transactionAmount === undefined || !mobileNumber || !transactionScreenshot) {
-      return res.status(400).json({ message: 'Missing required fields for registration.' });
-    }
+      const transactionScreenshot = req.file ? req.file.buffer : null;
+      const parsedEventIds = JSON.parse(eventIds);
 
-    try {
-      // Check if transaction ID is already used
-      const [existingTransaction] = await db.execute('SELECT id FROM registrations WHERE transactionId = ?', [transactionId]);
-      if (existingTransaction.length > 0) {
-        return res.status(409).json({ message: 'Transaction ID already used for another registration.' });
+      if (
+        !userId ||
+        !parsedEventIds ||
+        !Array.isArray(parsedEventIds) ||
+        parsedEventIds.length === 0 ||
+        !transactionId ||
+        !transactionUsername ||
+        !transactionTime ||
+        !transactionDate ||
+        transactionAmount === undefined ||
+        !mobileNumber ||
+        !transactionScreenshot
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'Missing required fields for registration.' });
       }
 
-      for (const eventId of parsedEventIds) {
-        // Fetch event details
-        const [[event]] = await db.execute('SELECT eventName, registrationFees, \'Enigma\' as symposium FROM enigma_events WHERE id = ? UNION SELECT eventName, registrationFees, \'Carteblanche\' as symposium FROM carte_blanche_events WHERE id = ?', [eventId, eventId]);
-        if (!event) {
-          // This will roll back the transaction if one event is not found
-          throw new Error(`Event with ID ${eventId} not found.`);
-        }
-
-        // Fetch user details (fullName and email)
-        const [[user]] = await db.execute('SELECT fullName, email FROM users WHERE id = ?', [userId]);
-        if (!user) {
-          throw new Error(`User with ID ${userId} not found.`);
-        }
-
-        // Check if already registered using userEmail
-        const [existing] = await db.execute('SELECT id FROM registrations WHERE userEmail = ? AND eventId = ?', [user.email, eventId]);
-        if (existing.length > 0) {
-          throw new Error(`Already registered for event ${event.eventName}.`);
-        }
-
-        // Insert registration
-        await db.execute(
-          'INSERT INTO registrations (symposium, eventId, userName, userEmail, mobileNumber, transactionId, transactionUsername, transactionTime, transactionDate, transactionAmount, transactionScreenshot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [event.symposium, eventId, user.fullName, user.email, mobileNumber, transactionId, transactionUsername, transactionTime, transactionDate, event.registrationFees, transactionScreenshot]
+      try {
+        const [existingTransaction] = await db.execute(
+          'SELECT id FROM registrations WHERE transactionId = ?',
+          [transactionId]
         );
+        if (existingTransaction.length > 0) {
+          return res
+            .status(409)
+            .json({ message: 'Transaction ID already used for another registration.' });
+        }
+
+        for (const eventId of parsedEventIds) {
+          const [[event]] = await db.execute(
+            `SELECT eventName, registrationFees, 'Enigma' as symposium 
+             FROM enigma_events WHERE id = ? 
+             UNION 
+             SELECT eventName, registrationFees, 'Carteblanche' as symposium 
+             FROM carte_blanche_events WHERE id = ?`,
+            [eventId, eventId]
+          );
+          if (!event) {
+            throw new Error(`Event with ID ${eventId} not found.`);
+          }
+
+          const [[user]] = await db.execute(
+            'SELECT fullName, email FROM users WHERE id = ?',
+            [userId]
+          );
+          if (!user) {
+            throw new Error(`User with ID ${userId} not found.`);
+          }
+
+          const [existing] = await db.execute(
+            'SELECT id FROM registrations WHERE userEmail = ? AND eventId = ?',
+            [user.email, eventId]
+          );
+          if (existing.length > 0) {
+            throw new Error(`Already registered for event ${event.eventName}.`);
+          }
+
+          await db.execute(
+            `INSERT INTO registrations 
+             (symposium, eventId, userName, userEmail, mobileNumber, transactionId, transactionUsername, transactionTime, transactionDate, transactionAmount, transactionScreenshot) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              event.symposium,
+              eventId,
+              user.fullName,
+              user.email,
+              mobileNumber,
+              transactionId,
+              transactionUsername,
+              transactionTime,
+              transactionDate,
+              event.registrationFees,
+              transactionScreenshot,
+            ]
+          );
+        }
+
+        res
+          .status(201)
+          .json({ message: 'Registration successful for all events.' });
+      } catch (error) {
+        console.error('Error during registration:', error);
+        res
+          .status(500)
+          .json({ message: error.message || 'Failed to register.' });
       }
-
-      res.status(201).json({ message: 'Registration successful for all events.' });
-    } catch (error) {
-      console.error('Error during registration:', error);
-      res.status(500).json({ message: error.message || 'Failed to register.' });
     }
-  });
+  );
 
-  // GET registrations for a specific event
   router.get('/event/:eventId', async (req, res) => {
     const { eventId } = req.params;
     try {
       const [workshopRegistrations] = await db.execute(
-        `SELECT r.transactionId, r.transactionUsername, r.transactionTime, r.transactionDate, r.transactionAmount, u.fullName as userName, u.email, u.college 
+        `SELECT r.transactionId, r.transactionUsername, r.transactionTime, r.transactionDate, r.transactionAmount, 
+                u.fullName as userName, u.email, u.college 
          FROM registrations r 
          JOIN users u ON r.userEmail = u.email 
          JOIN verified_registrations vr ON u.id = vr.userId AND r.eventId = vr.eventId
          WHERE r.eventId = ? AND vr.verified = true`,
         [eventId]
       );
+
       const [nonWorkshopRegistrations] = await db.execute(
-        `SELECT u.fullName as userName, u.email, u.college, NULL as transactionId, NULL as transactionUsername, NULL as transactionTime, NULL as transactionDate, NULL as transactionAmount 
+        `SELECT u.fullName as userName, u.email, u.college, 
+                NULL as transactionId, NULL as transactionUsername, NULL as transactionTime, NULL as transactionDate, NULL as transactionAmount 
          FROM enigma_non_workshop_registrations enr 
          JOIN users u ON enr.userEmail = u.email 
          JOIN verified_registrations vr ON u.id = vr.userId AND enr.eventId = vr.eventId
@@ -105,10 +169,17 @@ module.exports = function(db, uploadTransactionScreenshot) {
         [eventId]
       );
 
-      // Combine and format registrations
       const allRegistrations = [
-        ...workshopRegistrations.map(reg => ({ ...reg, email: reg.email || 'N/A', college: reg.college || 'N/A' })),
-        ...nonWorkshopRegistrations.map(reg => ({ ...reg, email: reg.email || 'N/A', college: reg.college || 'N/A' }))
+        ...workshopRegistrations.map((reg) => ({
+          ...reg,
+          email: reg.email || 'N/A',
+          college: reg.college || 'N/A',
+        })),
+        ...nonWorkshopRegistrations.map((reg) => ({
+          ...reg,
+          email: reg.email || 'N/A',
+          college: reg.college || 'N/A',
+        })),
       ];
 
       res.status(200).json(allRegistrations);
@@ -118,33 +189,31 @@ module.exports = function(db, uploadTransactionScreenshot) {
     }
   });
 
-  // GET registered events for a user
-  router.get('/:userEmail', async (req, res) => {
-  const { userEmail } = req.params;
-  try {
-    // Get workshop registrations
-    const [workshopRegistrations] = await db.execute(
-      'SELECT eventId FROM registrations WHERE userEmail = ?',
-      [userEmail]
-    );
+  router.get('/by-email/:userEmail', async (req, res) => {
+    const { userEmail } = req.params;
+    try {
+      const [workshopRegistrations] = await db.execute(
+        'SELECT eventId FROM registrations WHERE userEmail = ?',
+        [userEmail]
+      );
 
-    // Get non-workshop registrations
-    const [nonWorkshopRegistrations] = await db.execute(
-      'SELECT eventId FROM enigma_non_workshop_registrations WHERE userEmail = ?',
-      [userEmail]
-    );
+      const [nonWorkshopRegistrations] = await db.execute(
+        'SELECT eventId FROM enigma_non_workshop_registrations WHERE userEmail = ?',
+        [userEmail]
+      );
 
-    // Merge results
-    const allRegistrations = [...workshopRegistrations, ...nonWorkshopRegistrations];
+      const allRegistrations = [
+        ...workshopRegistrations,
+        ...nonWorkshopRegistrations,
+      ];
 
-    res.status(200).json(allRegistrations);
-  } catch (error) {
-    console.error('Error fetching registered events:', error);
-    res.status(500).json({ message: 'Failed to fetch registered events.' });
-  }
-});
+      res.status(200).json(allRegistrations);
+    } catch (error) {
+      console.error('Error fetching registered events:', error);
+      res.status(500).json({ message: 'Failed to fetch registered events.' });
+    }
+  });
 
-  // GET verified registered events for a user
   router.get('/verified/:userId', async (req, res) => {
     const { userId } = req.params;
     try {
@@ -163,26 +232,32 @@ module.exports = function(db, uploadTransactionScreenshot) {
       res.status(200).json(verifiedEvents);
     } catch (error) {
       console.error('Error fetching verified registered events:', error);
-      res.status(500).json({ message: 'Failed to fetch verified registered events.' });
+      res
+        .status(500)
+        .json({ message: 'Failed to fetch verified registered events.' });
     }
   });
 
-  // POST a new registration (without transaction details for non-workshops)
   router.post('/simple', async (req, res) => {
-    const { userEmail, eventId } = req.body; // Only these are required for simple registration
+    const { userEmail, eventId } = req.body;
 
     if (!userEmail || !eventId) {
-      return res.status(400).json({ message: 'Missing required fields for simple registration.' });
+      return res
+        .status(400)
+        .json({ message: 'Missing required fields for simple registration.' });
     }
 
     try {
-      // Check if already registered
-      const [existing] = await db.execute('SELECT id FROM enigma_non_workshop_registrations WHERE userEmail = ? AND eventId = ?', [userEmail, eventId]);
+      const [existing] = await db.execute(
+        'SELECT id FROM enigma_non_workshop_registrations WHERE userEmail = ? AND eventId = ?',
+        [userEmail, eventId]
+      );
       if (existing.length > 0) {
-        return res.status(409).json({ message: 'Already registered for this event.' });
+        return res
+          .status(409)
+          .json({ message: 'Already registered for this event.' });
       }
 
-      // Insert registration without transaction details
       await db.execute(
         'INSERT INTO enigma_non_workshop_registrations (userEmail, eventId) VALUES (?, ?)',
         [userEmail, eventId]
@@ -199,23 +274,27 @@ module.exports = function(db, uploadTransactionScreenshot) {
     const { userId } = req.params;
 
     try {
-      const [[user]] = await db.execute('SELECT email FROM users WHERE id = ?', [userId]);
+      const [[user]] = await db.execute(
+        'SELECT email FROM users WHERE id = ?',
+        [userId]
+      );
       if (!user) {
         return res.status(404).json({ message: 'User not found.' });
       }
       const userEmail = user.email;
 
       const [allRegistrations] = await db.execute(
-        `SELECT id, eventId, userEmail, round1, round2, round3, symposium FROM registrations WHERE userEmail = ?
+        `SELECT id, eventId, userEmail, round1, round2, round3, symposium 
+         FROM registrations WHERE userEmail = ?
          UNION
-         SELECT id, eventId, userEmail, -1 as round1, -1 as round2, -1 as round3, 'Enigma' as symposium FROM enigma_non_workshop_registrations WHERE userEmail = ?`,
+         SELECT id, eventId, userEmail, -1 as round1, -1 as round2, -1 as round3, 'Enigma' as symposium 
+         FROM enigma_non_workshop_registrations WHERE userEmail = ?`,
         [userEmail, userEmail]
       );
 
       const registrationsWithEvents = [];
       for (const reg of allRegistrations) {
         let event;
-        let rounds;
         let eventTable = '';
         let roundsTable = '';
 
@@ -228,19 +307,24 @@ module.exports = function(db, uploadTransactionScreenshot) {
         }
 
         if (eventTable) {
-          const [[eventResult]] = await db.execute(`SELECT * FROM ${eventTable} WHERE id = ?`, [reg.eventId]);
+          const [[eventResult]] = await db.execute(
+            `SELECT * FROM ${eventTable} WHERE id = ?`,
+            [reg.eventId]
+          );
           event = eventResult;
           if (event) {
-            const [roundsResult] = await db.execute(`SELECT * FROM ${roundsTable} WHERE eventId = ?`, [reg.eventId]);
+            const [roundsResult] = await db.execute(
+              `SELECT * FROM ${roundsTable} WHERE eventId = ?`,
+              [reg.eventId]
+            );
             event.rounds = roundsResult;
           }
         }
-        
+
         registrationsWithEvents.push({ ...reg, event });
       }
 
       res.status(200).json(registrationsWithEvents);
-
     } catch (error) {
       console.error('Error fetching user registrations:', error);
       res.status(500).json({ message: 'Failed to fetch user registrations.' });

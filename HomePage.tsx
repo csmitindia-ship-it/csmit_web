@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, Link} from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Header from "./ui/Header";
 
@@ -103,7 +103,7 @@ export default function HomePage() {
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const location = useLocation();
-  const { user, loading, logout } = useAuth();
+  const { } = useAuth();
 
   
 

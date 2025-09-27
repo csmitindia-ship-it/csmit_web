@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
+import { useAuth } from '../context/AuthContext';
+import ThemedModal from '../components/ThemedModal';
 
 interface Event {
   id: string; // Changed from number to string
@@ -14,7 +16,13 @@ interface Event {
 const AdminViewRegistrationsOverviewPage: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -23,7 +31,7 @@ const AdminViewRegistrationsOverviewPage: React.FC = () => {
         const data = await response.json();
         setEvents(data);
       } catch (err) {
-        console.error('Error fetching events:', err);
+        showModal('Error', 'Error fetching events. Please try again later.');
       } finally {
         setIsLoading(false);
       }
@@ -34,10 +42,14 @@ const AdminViewRegistrationsOverviewPage: React.FC = () => {
 
   const handleViewRegistrations = (eventId: string, symposiumName: string) => { // eventId type changed to string
     if (!eventId || !symposiumName) {
-      console.error("Attempted to view registrations for an event with undefined ID or symposium name.");
+      showModal('Error', 'Attempted to view registrations for an event with an invalid ID or symposium name.');
       return;
     }
-    navigate(`/admin/events/registrations/${eventId}?symposium=${symposiumName}`);
+    if (user?.role === 'organizer') {
+      navigate(`/organizer/events/registrations/${eventId}?symposium=${symposiumName}`);
+    } else {
+      navigate(`/admin/events/registrations/${eventId}?symposium=${symposiumName}`);
+    }
   };
 
   if (isLoading) {
@@ -46,6 +58,12 @@ const AdminViewRegistrationsOverviewPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 pt-20">
+      <ThemedModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ isOpen: false, title: '', message: '' })}
+        title={modal.title}
+        message={modal.message}
+      />
       <div className="container mx-auto">
         <h1 className="text-3xl font-bold text-white mb-6 text-center">
           View Event Registrations

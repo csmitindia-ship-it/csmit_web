@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import ThemedModal from '../components/ThemedModal'; // Adjust path as needed
-import Loader from '../components/Loader'; // Import Loader component
+import ThemedModal from '../components/ThemedModal';
+import Loader from '../components/Loader';
 
 interface Experience {
   id: number;
@@ -16,12 +16,12 @@ interface Experience {
 
 const ApprovedExperiencesPage: React.FC = () => {
   const [approvedExperiences, setApprovedExperiences] = useState<Experience[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
-  const [modalOnConfirm, setModalOnConfirm] = useState<(() => void) | undefined>(undefined);
-  const [showConfirmButton, setShowConfirmButton] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   const fetchExperiences = async () => {
     setIsLoading(true);
@@ -31,11 +31,11 @@ const ApprovedExperiencesPage: React.FC = () => {
         const data = await response.json();
         setApprovedExperiences(data);
       } else {
-        console.error('Error fetching experiences:', response.statusText);
+        showModal('Error', 'Error fetching experiences.');
         setApprovedExperiences([]);
       }
     } catch (err) {
-      console.error('Error fetching experiences:', err);
+      showModal('Error', 'Error fetching experiences.');
     } finally {
       setIsLoading(false);
     }
@@ -46,37 +46,30 @@ const ApprovedExperiencesPage: React.FC = () => {
   }, []);
 
   const handleDeleteExperience = (id: number) => {
-    setModalTitle('Confirm Deletion');
-    setModalMessage('Are you sure you want to delete this experience?');
-    setModalOnConfirm(() => async () => {
-      try {
-        const response = await fetch(`/api/placements/admin/delete-experience/${id}`, {
-          method: 'DELETE',
-        });
-        const result = await response.json();
-
-        if (response.ok) {
-          fetchExperiences(); // Re-fetch to update list
-          setModalTitle('Success');
-          setModalMessage('Experience deleted successfully!');
-          setShowConfirmButton(false);
-          setIsModalOpen(true);
-        } else {
-          setModalTitle('Error');
-          setModalMessage(result.message || 'Failed to delete experience.');
-          setShowConfirmButton(false);
-          setIsModalOpen(true);
-        }
-      } catch (err) {
-        console.error('Error deleting experience:', err);
-        setModalTitle('Error');
-        setModalMessage('Failed to delete experience.');
-        setShowConfirmButton(false);
-        setIsModalOpen(true);
-      }
+    setModal({ 
+      isOpen: true, 
+      title: 'Confirm Deletion', 
+      message: 'Are you sure you want to delete this experience?' 
     });
-    setShowConfirmButton(true);
-    setIsModalOpen(true);
+  };
+
+  const confirmDelete = async (id: number) => {
+    try {
+      const response = await fetch(`/api/placements/admin/delete-experience/${id}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+
+      if (response.ok) {
+        fetchExperiences();
+        showModal('Success', 'Experience deleted successfully!');
+      } else {
+        showModal('Error', result.message || 'Failed to delete experience.');
+      }
+    } catch (err) {
+      showModal('Error', 'Failed to delete experience.');
+    }
+    setModal({ isOpen: false, title: '', message: '' });
   };
 
   const getPdfUrl = (pdfPath: string) => {
@@ -127,13 +120,13 @@ const ApprovedExperiencesPage: React.FC = () => {
           </div>
         </>
       )}
-      <ThemedModal // Render the modal component
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={modalTitle}
-        message={modalMessage}
-        onConfirm={modalOnConfirm}
-        showConfirmButton={showConfirmButton}
+      <ThemedModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ isOpen: false, title: '', message: '' })}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.title === 'Confirm Deletion' ? () => confirmDelete(approvedExperiences.find(exp => exp.id)!.id) : undefined}
+        showConfirmButton={modal.title === 'Confirm Deletion'}
       />
     </>
   );

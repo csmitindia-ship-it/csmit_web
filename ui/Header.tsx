@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../Photos/Logo.png";
-import { useAuth } from "../context/AuthContext"; // Import useAuth
+import { useAuth } from "../context/AuthContext";
 import ThemedModal from "../components/ThemedModal";
-import { FiLogIn, FiUserPlus, FiLogOut } from 'react-icons/fi';
+import { FiLogIn, FiUserPlus, FiLogOut } from "react-icons/fi";
 
 interface HeaderProps {
-  setIsLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>; // Re-added
-  setIsSignUpModalOpen: React.Dispatch<React.SetStateAction<boolean>>; // Re-added
+  setIsLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsSignUpModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOpen }) => { // Re-added props
+const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth(); // Use the auth context
+  const { user, logout } = useAuth();
   const [symposiumStatus, setSymposiumStatus] = useState<any[]>([]);
   const [isSymposiumModalOpen, setIsSymposiumModalOpen] = useState(false);
   const [enigmaDate, setEnigmaDate] = useState("");
   const [carteblancheDate, setCarteblancheDate] = useState("");
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchSymposiumStatus = async () => {
@@ -27,52 +30,53 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
         setSymposiumStatus(data);
       } catch (error) {
         console.error("Error fetching symposium status:", error);
+        setModalTitle("Error");
+        setModalMessage("Failed to fetch symposium status.");
+        setIsModalOpen(true);
       }
     };
-
     fetchSymposiumStatus();
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     if (location.pathname !== "/") {
-      // Navigate to homepage with hash
       navigate(`/${targetId}`);
     } else {
-      // Scroll to section smoothly
-      const element = document.getElementById(targetId.substring(1)); // remove #
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-      }
+      const element = document.getElementById(targetId.substring(1));
+      if (element) element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   const handleLogout = () => {
     logout();
-    navigate("/"); // Redirect to home after logout
+    navigate("/");
   };
 
   const handleStartSymposium = async (symposiumName: string, date: string) => {
     try {
       const response = await fetch("/api/symposium/start", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symposiumName, startDate: date }),
       });
       if (response.ok) {
-        alert(`${symposiumName} has been started.`);
-        // Refresh status
+        setModalTitle("Success");
+        setModalMessage(`Successfully started ${symposiumName}.`);
+        setIsModalOpen(true);
         const statusResponse = await fetch("/api/symposium/status");
         const data = await statusResponse.json();
         setSymposiumStatus(data);
       } else {
-        alert(`Failed to start ${symposiumName}.`);
+        setModalTitle("Error");
+        setModalMessage(`Failed to start ${symposiumName}.`);
+        setIsModalOpen(true);
       }
     } catch (error) {
       console.error(`Error starting ${symposiumName}:`, error);
-      alert(`Error starting ${symposiumName}.`);
+      setModalTitle("Error");
+      setModalMessage(`Error starting ${symposiumName}.`);
+      setIsModalOpen(true);
     }
   };
 
@@ -80,35 +84,38 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
     try {
       const response = await fetch("/api/symposium/stop", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symposiumName }),
       });
       if (response.ok) {
-        alert(`${symposiumName} has been stopped.`);
-        // Refresh status
+        setModalTitle("Success");
+        setModalMessage(`${symposiumName} has been stopped.`);
+        setIsModalOpen(true);
         const statusResponse = await fetch("/api/symposium/status");
         const data = await statusResponse.json();
         setSymposiumStatus(data);
       } else {
-        alert(`Failed to stop ${symposiumName}.`);
+        setModalTitle("Error");
+        setModalMessage(`Failed to stop ${symposiumName}.`);
+        setIsModalOpen(true);
       }
     } catch (error) {
       console.error(`Error stopping ${symposiumName}:`, error);
-      alert(`Error stopping ${symposiumName}.`);
+      setModalTitle("Error");
+      setModalMessage(`Error stopping ${symposiumName}.`);
+      setIsModalOpen(true);
     }
   };
 
   const getSymposiumStatus = (symposiumName: string) => {
     if (!Array.isArray(symposiumStatus)) return false;
-    const symposium = symposiumStatus.find(s => s.symposiumName === symposiumName);
+    const symposium = symposiumStatus.find((s) => s.symposiumName === symposiumName);
     return symposium ? symposium.isOpen === 1 : false;
   };
 
   const anySymposiumOpen = () => {
     if (!Array.isArray(symposiumStatus)) return false;
-    return symposiumStatus.some(s => s.isOpen === 1);
+    return symposiumStatus.some((s) => s.isOpen === 1);
   };
 
   return (
@@ -117,80 +124,67 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
         {/* Logo + Title */}
         <div className="flex items-center space-x-3">
           <img src={Logo} alt="CSMIT Logo" className="h-10 w-auto rounded-md" />
-          <span
-            className="text-2xl font-bold text-white"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
-          >
+          <span className="text-2xl font-bold text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
             CSMIT
           </span>
         </div>
 
         {/* Navigation Links */}
         <div className="hidden md:flex space-x-6">
-          {user?.role !== 'admin' && ( // Check if user is NOT admin
+          {user?.role !== "admin" && (
             <>
-              <a
-                href="#home"
-                onClick={(e) => handleNavClick(e, "#home")}
-                className="text-white hover:text-purple-400 transition"
-              >
+              <a href="#home" onClick={(e) => handleNavClick(e, "#home")} className="text-white hover:text-purple-400 transition">
                 Home
               </a>
-              <a
-                href="#alumni"
-                onClick={(e) => handleNavClick(e, "#alumni")}
-                className="text-white hover:text-purple-400 transition"
-              >
+              <a href="#alumni" onClick={(e) => handleNavClick(e, "#alumni")} className="text-white hover:text-purple-400 transition">
                 Alumni
               </a>
-              <a
-                href="#about"
-                onClick={(e) => handleNavClick(e, "#about")}
-                className="text-white hover:text-purple-400 transition"
-              >
+              <a href="#about" onClick={(e) => handleNavClick(e, "#about")} className="text-white hover:text-purple-400 transition">
                 About
               </a>
             </>
           )}
-          {user?.role === 'admin' ? (
+          {user?.role === "admin" ? (
             <a
               href="/admin"
-              onClick={(e) => { e.preventDefault(); navigate("/admin"); }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/admin");
+              }}
               className="text-white hover:text-purple-400 transition"
             >
               Managements
             </a>
           ) : (
-            <a
-              href="#events"
-              onClick={(e) => handleNavClick(e, "#events")}
-              className="text-white hover:text-purple-400 transition"
-            >
+            <a href="#events" onClick={(e) => handleNavClick(e, "#events")} className="text-white hover:text-purple-400 transition">
               Events
             </a>
           )}
           <a
             href="/placements"
-            onClick={(e) => { e.preventDefault(); navigate("/placements"); }}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/placements");
+            }}
             className="text-white hover:text-purple-400 transition"
           >
             Placements
           </a>
-          {user?.role === 'admin' && (
+          {user?.role === "admin" && (
             <a
               href="/admin/organizer"
-              onClick={(e) => { e.preventDefault(); navigate("/admin/organizer"); }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/admin/organizer");
+              }}
               className="text-white hover:text-purple-400 transition"
             >
               Organizer
             </a>
           )}
-          {user?.role === 'admin' && (
+          {user?.role === "admin" && (
             <>
-              <button
-                onClick={() => setIsSymposiumModalOpen(true)}
-                className="text-white hover:text-purple-400 transition"
-              >
+              <button onClick={() => setIsSymposiumModalOpen(true)} className="text-white hover:text-purple-400 transition">
                 Symposium Control
               </button>
               <ThemedModal
@@ -256,19 +250,25 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
               </ThemedModal>
             </>
           )}
-          {user && user.role !== 'admin' && anySymposiumOpen() && (
+          {user && user.role !== "admin" && anySymposiumOpen() && (
             <a
               href="/enrolled-events"
-              onClick={(e) => { e.preventDefault(); navigate("/enrolled-events"); }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/enrolled-events");
+              }}
               className="text-white hover:text-purple-400 transition"
             >
               My Events
             </a>
           )}
-          {user && user.role !== 'admin' && anySymposiumOpen() && (
+          {user && user.role !== "admin" && anySymposiumOpen() && (
             <a
               href="/cart"
-              onClick={(e) => { e.preventDefault(); navigate("/cart"); }}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/cart");
+              }}
               className="text-white hover:text-purple-400 transition"
             >
               Cart
@@ -282,17 +282,17 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
             <>
               <button
                 onClick={() => {
-                  if (user.role === 'admin') {
-                    navigate('/admin');
-                  } else if (user.role === 'student') {
-                    navigate('/student-dashboard'); // Assuming a student dashboard route
-                  } else if (user.role === 'organizer') {
-                    navigate('/admin/view-registrations');
+                  if (user.role === "admin") {
+                    navigate("/admin");
+                  } else if (user.role === "student") {
+                    navigate("/student-dashboard");
+                  } else if (user.role === "organizer") {
+                    navigate("/admin/view-registrations");
                   }
                 }}
                 className="px-4 py-2 text-sm border border-purple-400 text-purple-400 rounded-md hover:bg-purple-400 hover:text-black transition"
               >
-                {user.role === 'admin' ? 'Admin' : user.name || user.email}
+                {user.role === "admin" ? "Admin" : user.name || user.email}
               </button>
               <button
                 onClick={handleLogout}
@@ -305,14 +305,14 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
           ) : (
             <>
               <button
-                onClick={() => setIsLoginModalOpen(true)} // Changed to set state
+                onClick={() => setIsLoginModalOpen(true)}
                 className="flex items-center px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
               >
                 <FiLogIn className="mr-2" />
                 Login
               </button>
               <button
-                onClick={() => setIsSignUpModalOpen(true)} // Changed to set state
+                onClick={() => setIsSignUpModalOpen(true)}
                 className="flex items-center px-4 py-2 text-sm border border-purple-400 text-purple-400 rounded-md hover:bg-purple-400 hover:text-black transition"
               >
                 <FiUserPlus className="mr-2" />
@@ -322,6 +322,11 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
           )}
         </div>
       </nav>
+
+      {/* ✅ Global Modal for Alerts */}
+      <ThemedModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalTitle}>
+        <p className="text-white">{modalMessage}</p>
+      </ThemedModal>
     </header>
   );
 };

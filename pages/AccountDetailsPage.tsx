@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import ThemedModal from '../components/ThemedModal'; // Ensure ThemedModal is explicitly imported
+import ThemedModal from '../components/ThemedModal';
 
 interface AccountDetail {
   id: number;
@@ -23,13 +23,11 @@ const AccountDetailsPage: React.FC = () => {
     ifscCode: '',
   });
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
-  const [modalOnConfirm, setModalOnConfirm] = useState<(() => void) | undefined>(undefined);
-  const [showConfirmButton, setShowConfirmButton] = useState(false);
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'admin')) {
@@ -42,7 +40,6 @@ const AccountDetailsPage: React.FC = () => {
   }, []);
 
   const fetchAccountDetails = async () => {
-    setError(null); // Clear any previous errors
     try {
       const response = await fetch('http://localhost:5001/admin/accounts');
       if (!response.ok) {
@@ -51,8 +48,7 @@ const AccountDetailsPage: React.FC = () => {
       const data = await response.json();
       setAccountDetails(data);
     } catch (err) {
-      console.error('Error fetching account details:', err);
-      setError('Failed to fetch account details. Please try again later.'); // More specific error for actual failures
+      showModal('Error', 'Failed to fetch account details. Please try again later.');
     }
   };
 
@@ -62,22 +58,19 @@ const AccountDetailsPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
     try {
       if (editingId) {
         await axios.put(`http://localhost:5001/admin/accounts/${editingId}`, form);
-        setSuccess('Account details updated successfully!');
+        showModal('Success', 'Account details updated successfully!');
       } else {
         await axios.post('http://localhost:5001/admin/accounts', form);
-        setSuccess('Account details added successfully!');
+        showModal('Success', 'Account details added successfully!');
       }
       setForm({ accountName: '', bankName: '', accountNumber: '', ifscCode: '' });
       setEditingId(null);
       fetchAccountDetails();
     } catch (err) {
-      console.error('Error submitting account details:', err);
-      setError('Failed to save account details.');
+      showModal('Error', 'Failed to save account details.');
     }
   };
 
@@ -87,23 +80,24 @@ const AccountDetailsPage: React.FC = () => {
   };
 
   const handleDelete = (id: number) => {
-    setModalTitle('Confirm Deletion');
-    setModalMessage('Are you sure you want to delete this account detail?');
-    setModalOnConfirm(() => async () => {
-      try {
-        await axios.delete(`/api/admin/accounts/${id}`);
-        setSuccess('Account details deleted successfully!');
-        fetchAccountDetails();
-        setIsModalOpen(false); // Close modal after successful deletion
-      } catch (err) {
-        console.error('Error deleting account details:', err);
-        setError('Failed to delete account details.');
-        setIsModalOpen(false); // Close modal even on error
-      }
+    setModal({ 
+      isOpen: true, 
+      title: 'Confirm Deletion', 
+      message: 'Are you sure you want to delete this account detail?' 
     });
-    setShowConfirmButton(true);
-    setIsModalOpen(true);
   };
+
+  const confirmDelete = async (id: number) => {
+    try {
+      await axios.delete(`/api/admin/accounts/${id}`);
+      showModal('Success', 'Account details deleted successfully!');
+      fetchAccountDetails();
+    } catch (err) {
+      showModal('Error', 'Failed to delete account details.');
+    }
+    setModal({ isOpen: false, title: '', message: '' });
+  };
+
 
   if (loading) {
     return <div>Loading...</div>;
@@ -113,8 +107,14 @@ const AccountDetailsPage: React.FC = () => {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <h1 className="text-3xl font-bold mb-6">Manage Account Details</h1>
 
-      {error && <div className="bg-red-500 p-3 rounded mb-4">{error}</div>}
-      {success && <div className="bg-green-500 p-3 rounded mb-4">{success}</div>}
+      <ThemedModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ isOpen: false, title: '', message: '' })}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.title === 'Confirm Deletion' ? () => confirmDelete(editingId!) : undefined}
+        showConfirmButton={modal.title === 'Confirm Deletion'}
+      />
 
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
         <h2 className="text-xl font-semibold mb-4">{editingId ? 'Edit Account Detail' : 'Add New Account Detail'}</h2>
@@ -217,15 +217,6 @@ const AccountDetailsPage: React.FC = () => {
           </ul>
         )}
       </div>
-
-      <ThemedModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={modalTitle}
-        message={modalMessage}
-        onConfirm={modalOnConfirm}
-        showConfirmButton={showConfirmButton}
-      />
     </div>
   );
 };

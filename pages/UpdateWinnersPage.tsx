@@ -11,23 +11,53 @@ interface Registration {
 }
 
 const TickIcon = () => (
-  <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+  <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+  </svg>
 );
 
 const CrossIcon = () => (
-  <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+  <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+  </svg>
 );
 
-const Notification = ({ message, onClose }: { message: string, onClose: () => void }) => (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-    <div className="relative bg-gray-800 border border-purple-500 text-white p-8 rounded-lg shadow-lg max-w-sm text-center">
-      <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-white">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
-      <p className="text-lg">{message}</p>
+// ✅ ThemedModal reused everywhere
+const ThemedModal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="relative bg-gray-800 border border-purple-500 text-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-gray-400 hover:text-white"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        <h2 className="text-xl font-bold mb-4">{title}</h2>
+        <div>{children}</div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const UpdateWinnersPage: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
@@ -36,7 +66,7 @@ const UpdateWinnersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [eligibleMessage, setEligibleMessage] = useState('');
   const [ineligibleMessage, setIneligibleMessage] = useState('');
-  const [notification, setNotification] = useState<string | null>(null);
+  const [modalMessage, setModalMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -45,7 +75,7 @@ const UpdateWinnersPage: React.FC = () => {
         const data = await response.json();
         setEvents(data);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        setModalMessage('Error fetching events.');
       }
     };
 
@@ -57,46 +87,48 @@ const UpdateWinnersPage: React.FC = () => {
     setSearchTerm('');
     setEligibleMessage('');
     setIneligibleMessage('');
-    setNotification(null);
+    setModalMessage(null);
     try {
       const response = await fetch(`/api/events/${eventId}/registrations`);
       const data = await response.json();
       if (response.ok) {
         setRegistrations(data);
       } else {
-        setNotification(data.message);
+        setModalMessage(data.message);
         setRegistrations([]);
       }
     } catch (error) {
-      console.error('Error fetching registrations:', error);
-      setNotification('An error occurred while fetching registrations.');
+      setModalMessage('An error occurred while fetching registrations.');
     }
   };
 
   const handleUpdateStatus = async (userId: number, status: 0 | 1) => {
     if (selectedRound) {
       try {
-        const response = await fetch(`/api/events/${selectedRound.eventId}/rounds/${selectedRound.roundNumber}/eligible`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId, status }),
-        });
+        const response = await fetch(
+          `/api/events/${selectedRound.eventId}/rounds/${selectedRound.roundNumber}/eligible`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId, status }),
+          }
+        );
         const data = await response.json();
-        setNotification(data.message);
+        setModalMessage(data.message);
         if (response.ok) {
           // Optimistically update the UI
-          setRegistrations(prev => prev.map(reg => {
-            if (reg.userId === userId) {
-              return { ...reg, [`round${selectedRound.roundNumber}`]: status };
-            }
-            return reg;
-          }));
+          setRegistrations((prev) =>
+            prev.map((reg) =>
+              reg.userId === userId
+                ? { ...reg, [`round${selectedRound.roundNumber}`]: status }
+                : reg
+            )
+          );
         }
       } catch (error) {
-        console.error('Error updating status:', error);
-        setNotification('An error occurred while updating the status.');
+        setModalMessage('An error occurred while updating the status.');
       }
     }
   };
@@ -104,45 +136,59 @@ const UpdateWinnersPage: React.FC = () => {
   const handleNotify = async () => {
     if (selectedRound) {
       try {
-        const response = await fetch(`/api/events/${selectedRound.eventId}/rounds/${selectedRound.roundNumber}/notify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ eligibleMessage, ineligibleMessage }),
-        });
+        const response = await fetch(
+          `/api/events/${selectedRound.eventId}/rounds/${selectedRound.roundNumber}/notify`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ eligibleMessage, ineligibleMessage }),
+          }
+        );
         const data = await response.json();
-        setNotification(data.message);
+        setModalMessage(data.message);
       } catch (error) {
-        console.error('Error sending notifications:', error);
-        setNotification('An error occurred while sending notifications.');
+        setModalMessage('An error occurred while sending notifications.');
       }
     }
   };
 
-  const filteredRegistrations = registrations.filter(reg => 
-    reg.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    reg.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRegistrations = registrations.filter(
+    (reg) =>
+      reg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reg.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="text-white">
-      {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
+      <ThemedModal
+        isOpen={!!modalMessage}
+        onClose={() => setModalMessage(null)}
+        title="Notification"
+      >
+        <p>{modalMessage}</p>
+      </ThemedModal>
+
       <h1 className="text-2xl font-bold mb-6">Update Winners</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Events List */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Events</h2>
           <div className="space-y-4">
             {events.map((event) => (
               <div key={event.id} className="bg-gray-800 p-4 rounded-lg">
-                <h3 className="font-bold text-lg">{event.eventName} ({event.symposiumName})</h3>
+                <h3 className="font-bold text-lg">
+                  {event.eventName} ({event.symposiumName})
+                </h3>
                 <div className="mt-2 space-y-2">
                   {event.rounds.map((round: any) => (
                     <button
                       key={round.roundNumber}
                       onClick={() => handleRoundClick(event.id, round.roundNumber)}
                       className={`w-full text-left p-2 rounded-md ${
-                        selectedRound?.eventId === event.id && selectedRound?.roundNumber === round.roundNumber
+                        selectedRound?.eventId === event.id &&
+                        selectedRound?.roundNumber === round.roundNumber
                           ? 'bg-purple-600'
                           : 'bg-gray-700 hover:bg-gray-600'
                       }`}
@@ -156,6 +202,7 @@ const UpdateWinnersPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Registrations + Notifications */}
         {selectedRound && (
           <div className="bg-gray-800 p-4 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">
@@ -169,16 +216,24 @@ const UpdateWinnersPage: React.FC = () => {
               className="w-full p-2 mb-4 rounded-md bg-gray-700 text-white"
             />
             <div className="space-y-2">
-              {filteredRegistrations.map(reg => {
+              {filteredRegistrations.map((reg) => {
                 let previousRoundPassed = true;
                 if (selectedRound.roundNumber > 1) {
-                  const prevRoundName = `round${selectedRound.roundNumber - 1}` as 'round1' | 'round2';
+                  const prevRoundName = `round${selectedRound.roundNumber - 1}` as
+                    | 'round1'
+                    | 'round2';
                   if (reg[prevRoundName] !== 1) {
                     previousRoundPassed = false;
                   }
                 }
-                
-                const roundStatus = reg[`round${selectedRound.roundNumber}` as 'round1' | 'round2' | 'round3'];
+
+                const roundStatus =
+                  reg[
+                    `round${selectedRound.roundNumber}` as
+                      | 'round1'
+                      | 'round2'
+                      | 'round3'
+                  ];
 
                 return (
                   <div key={reg.id} className="bg-gray-700 p-4 rounded-md">
@@ -210,7 +265,8 @@ const UpdateWinnersPage: React.FC = () => {
                     </div>
                     {!previousRoundPassed && (
                       <p className="text-red-400 mt-2 text-sm">
-                        User cannot proceed to Round {selectedRound.roundNumber} as they were not marked eligible in the previous round.
+                        User cannot proceed to Round {selectedRound.roundNumber} as they were not
+                        marked eligible in the previous round.
                       </p>
                     )}
                   </div>
@@ -221,7 +277,9 @@ const UpdateWinnersPage: React.FC = () => {
               <h3 className="text-lg font-semibold mb-2">Notification Messages</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">For Eligible Students</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    For Eligible Students
+                  </label>
                   <textarea
                     value={eligibleMessage}
                     onChange={(e) => setEligibleMessage(e.target.value)}
@@ -231,7 +289,9 @@ const UpdateWinnersPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">For Non-Eligible Students</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">
+                    For Non-Eligible Students
+                  </label>
                   <textarea
                     value={ineligibleMessage}
                     onChange={(e) => setIneligibleMessage(e.target.value)}

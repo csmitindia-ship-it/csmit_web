@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-import Loader from '../components/Loader'; // Import Loader component
+import Loader from '../components/Loader';
+import ThemedModal from '../components/ThemedModal';
 
 interface Round {
   roundNumber: number;
@@ -22,8 +22,8 @@ interface Event {
   coordinatorMail: string;
   lastDateForRegistration: string;
   symposiumName: 'Enigma' | 'Carteblanche';
-  rounds?: Round[]; // Optional, as it will be fetched separately
-  posterUrl?: string; // Added for event poster
+  rounds?: Round[];
+  posterUrl?: string;
 }
 
 const AdminEventsDisplayPage: React.FC = () => {
@@ -33,17 +33,21 @@ const AdminEventsDisplayPage: React.FC = () => {
   const [selectedEventForPoster, setSelectedEventForPoster] = useState<{ id: number; symposiumName: 'Enigma' | 'Carteblanche' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [registrationsVisibleForEventId, setRegistrationsVisibleForEventId] = useState<number | null>(null);
-  
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
+
+  const showModal = (title: string, message: string) => {
+    setModal({ isOpen: true, title, message });
+  };
 
   const fetchEvents = async () => {
-    setIsLoading(true); // Set loading to true when fetch starts
+    setIsLoading(true);
     try {
       const response = await fetch('http://localhost:5001/events');
       const data = await response.json();
       setEvents(data);
     } catch (err) {
-      console.error('Error fetching events:', err);
+      showModal('Error', 'Error fetching events. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -57,8 +61,8 @@ const AdminEventsDisplayPage: React.FC = () => {
 
   const handleAddPosterClick = (eventId: number, symposiumName: 'Enigma' | 'Carteblanche') => {
     setSelectedEventForPoster({ id: eventId, symposiumName });
-    setShowMenuForEventId(null); // Close the dropdown menu
-    fileInputRef.current?.click(); // Directly trigger the file input
+    setShowMenuForEventId(null);
+    fileInputRef.current?.click();
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +70,7 @@ const AdminEventsDisplayPage: React.FC = () => {
       const file = event.target.files[0];
       const formData = new FormData();
       formData.append('poster', file);
-      formData.append('symposiumName', selectedEventForPoster.symposiumName); // Add symposiumName
+      formData.append('symposiumName', selectedEventForPoster.symposiumName);
 
       try {
         const response = await fetch(`http://localhost:5001/events/${selectedEventForPoster.id}/poster`, {
@@ -74,17 +78,15 @@ const AdminEventsDisplayPage: React.FC = () => {
           body: formData,
         });
         if (response.ok) {
-          alert('Poster uploaded successfully!');
-          fetchEvents(); // Refresh events to show the new poster
+          showModal('Success', 'Poster uploaded successfully!');
+          fetchEvents();
         } else {
-          alert('Failed to upload poster.');
+          showModal('Error', 'Failed to upload poster.');
         }
       } catch (error) {
-        console.error('Error uploading poster:', error);
-        alert('Error uploading poster.');
+        showModal('Error', 'Error uploading poster.');
       }
       setSelectedEventForPoster(null);
-      // Clear the file input to allow re-uploading the same file if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -99,16 +101,15 @@ const AdminEventsDisplayPage: React.FC = () => {
         body: JSON.stringify({ symposiumName }),
       });
       if (response.ok) {
-        alert('Poster removed successfully!');
-        fetchEvents(); // Refresh events to update the display
+        showModal('Success', 'Poster removed successfully!');
+        fetchEvents();
       } else {
-        alert('Failed to remove poster.');
+        showModal('Error', 'Failed to remove poster.');
       }
     } catch (error) {
-      console.error('Error removing poster:', error);
-      alert('Error removing poster.');
+      showModal('Error', 'Error removing poster.');
     }
-    setShowMenuForEventId(null); // Close the dropdown menu
+    setShowMenuForEventId(null);
   };
 
   const handleDeleteEvent = async (eventId: number, symposiumName: 'Enigma' | 'Carteblanche') => {
@@ -119,14 +120,13 @@ const AdminEventsDisplayPage: React.FC = () => {
         body: JSON.stringify({ symposiumName }),
       });
       if (response.ok) {
-        alert('Event deleted successfully!');
+        showModal('Success', 'Event deleted successfully!');
         fetchEvents();
       } else {
-        alert('Failed to delete event.');
+        showModal('Error', 'Failed to delete event.');
       }
     } catch (error) {
-      console.error('Error deleting event:', error);
-      alert('Error deleting event.');
+      showModal('Error', 'Error deleting event.');
     }
   };
 
@@ -140,12 +140,17 @@ const AdminEventsDisplayPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      
+      <ThemedModal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ isOpen: false, title: '', message: '' })}
+        title={modal.title}
+        message={modal.message}
+      />
 
       {isLoading ? (
         <Loader />
       ) : (
-        <div className="container mx-auto p-4 pt-20"> {/* Added pt-20 to account for fixed header */}
+        <div className="container mx-auto p-4 pt-20">
           <h1 className="text-3xl font-bold text-white mb-6 text-center">All Events</h1>
 
           <div className="flex justify-center items-center gap-4 mb-8">
@@ -240,7 +245,6 @@ const AdminEventsDisplayPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Hidden file input for direct trigger */}
           <input
             type="file"
             ref={fileInputRef}

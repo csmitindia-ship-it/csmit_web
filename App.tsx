@@ -122,6 +122,7 @@ export default function App() {
           <Route path="/organizer" element={<OrganizerPage />}>
             <Route index element={<Navigate to="registrations/view" replace />} />
             <Route path="registrations/view" element={<AdminViewRegistrationsOverviewPage />} />
+            <Route path="events/registrations/:eventId" element={<ViewEventRegistrationsPage />} />
             <Route path="registration-status" element={<RegistrationStatusPage />} />
             <Route path="update-winners" element={<UpdateWinnersPage />} />
           </Route>

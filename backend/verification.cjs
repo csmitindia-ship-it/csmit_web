@@ -10,15 +10,12 @@ module.exports = function(db) {
     }
 
     try {
-      // Check if a verification status already exists for this user and event
       const [existing] = await db.execute('SELECT * FROM verified_registrations WHERE userId = ? AND eventId = ?', [userId, eventId]);
 
       if (existing.length > 0) {
-        // If it exists, update it
         await db.execute('UPDATE verified_registrations SET verified = ? WHERE userId = ? AND eventId = ?', [verified, userId, eventId]);
         res.status(200).json({ message: 'Verification status updated successfully.' });
       } else {
-        // If it doesn't exist, insert a new record
         await db.execute('INSERT INTO verified_registrations (userId, eventId, verified) VALUES (?, ?, ?)', [userId, eventId, verified]);
         res.status(201).json({ message: 'Verification status created successfully.' });
       }
