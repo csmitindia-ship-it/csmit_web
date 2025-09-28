@@ -15,7 +15,6 @@ interface Experience {
   year_of_passing: number;
   company: string;
   linkedin_url: string;
-  pdf_path: string;
   status: 'pending' | 'approved' | 'rejected';
 }
 
@@ -32,7 +31,7 @@ const PlacementsPage: React.FC = () => {
   const fetchExperiences = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/placements/experiences');
+      const response = await fetch('http://localhost:5001/placements/experiences');
       const data = await response.json();
       const approved = data.filter((exp: Experience) => exp.status === 'approved');
       setApprovedExperiences(approved);
@@ -60,15 +59,6 @@ const PlacementsPage: React.FC = () => {
   const filteredCompanyNames = sortedCompanyNames.filter(company =>
     company.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const getPdfUrl = (pdfPath: string) => {
-    const pathParts = pdfPath.split('uploads');
-    if (pathParts.length > 1) {
-        const relativePath = pathParts[1].split('\\').join('/');
-        return `http://localhost:5001/uploads${relativePath}`;
-    }
-    return '';
-  }
 
   const handleCompanyClick = (companyName: string) => {
     setExpandedCompany(expandedCompany === companyName ? null : companyName);
@@ -191,7 +181,7 @@ const PlacementsPage: React.FC = () => {
                           <div key={exp.id} className="p-4 bg-gray-800/70 rounded-lg shadow-md">
                             <p className="font-bold text-white text-lg">{exp.name} ({exp.year_of_passing})</p>
                             <p className="text-sm text-gray-300 mb-2">{exp.type}</p>
-                            <a href={getPdfUrl(exp.pdf_path)} target="_blank" rel="noopener noreferrer" className="text-sm text-purple-400 hover:underline inline-block">View Experience (PDF)</a>
+                            <a href={`http://localhost:5001/placements/experiences/${exp.id}/pdf`} target="_blank" rel="noopener noreferrer" className="text-sm text-purple-400 hover:underline inline-block">View Experience (PDF)</a>
                           </div>
                         ))}
                       </div>

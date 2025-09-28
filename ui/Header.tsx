@@ -136,11 +136,14 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
               <a href="#home" onClick={(e) => handleNavClick(e, "#home")} className="text-white hover:text-purple-400 transition">
                 Home
               </a>
-              <a href="#alumni" onClick={(e) => handleNavClick(e, "#alumni")} className="text-white hover:text-purple-400 transition">
+              <a href="#featured-alumni" onClick={(e) => handleNavClick(e, "#featured-alumni")} className="text-white hover:text-purple-400 transition">
                 Alumni
               </a>
               <a href="#about" onClick={(e) => handleNavClick(e, "#about")} className="text-white hover:text-purple-400 transition">
                 About
+              </a>
+              <a href="/gallery" onClick={(e) => {e.preventDefault(); navigate("/gallery");}} className="text-white hover:text-purple-400 transition">
+                Gallery
               </a>
             </>
           )}

@@ -24,10 +24,7 @@ app.use((req, res, next) => {
 });
 
 // --- File Upload Setup ---
-const pdfDir = path.join(__dirname, 'uploads/pdfs');
-if (!fs.existsSync(pdfDir)){
-    fs.mkdirSync(pdfDir, { recursive: true });
-}
+
 
 const eventPosterDir = path.join(__dirname, 'uploads/event_posters');
 if (!fs.existsSync(eventPosterDir)){
@@ -52,7 +49,7 @@ const eventPosterStorage = multer.diskStorage({
   }
 });
 
-const uploadPdf = multer({ storage: pdfStorage, limits: { fileSize: 1 * 1024 * 1024 } });
+const uploadPdf = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1 * 1024 * 1024 } });
 const uploadEventPoster = multer({ storage: eventPosterStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 const uploadTransactionScreenshot = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -104,7 +101,7 @@ async function createTablesIfNotExists() {
       year_of_passing INT NOT NULL,
       company VARCHAR(255) NOT NULL,
       linkedin_url VARCHAR(255),
-      pdf_path VARCHAR(255) NOT NULL,
+      pdf_file LONGBLOB NOT NULL,
       status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -331,6 +328,7 @@ async function startServer() {
   const verificationRouter = require('./verification.cjs')(db);
   const symposiumRouter = require('./symposium.cjs')(db);
   const organizerRouter = require('./organizer.cjs')(db);
+  const galleryRouter = require('./gallery.cjs');
 
   app.use('/auth', authRouter);
   app.use('/events', eventsRouter);
@@ -341,6 +339,7 @@ async function startServer() {
   app.use('/verification', verificationRouter);
   app.use('/symposium', symposiumRouter);
   app.use('/organizers', organizerRouter);
+  app.use('/gallery', galleryRouter);
 
   // --- Start Server ---
   app.use((req, res, next) => {

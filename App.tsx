@@ -23,6 +23,7 @@ import RegistrationStatusPage from "./pages/RegistrationStatusPage.tsx";
 import EnrolledEventsPage from "./pages/EnrolledEventsPage";
 import OrganizerPage from "./pages/OrganizerPage";
 import UpdateWinnersPage from "./pages/UpdateWinnersPage";
+import GalleryPage from "./pages/GalleryPage";
 import Header from "./ui/Header";
 import AdminHeader from "./ui/AdminHeader";
 import OrganizerHeader from "./ui/OrganizerHeader";
@@ -36,9 +37,10 @@ export default function App() {
   const location = useLocation();
 
   const lines = [
-    "Initializing... Starting Computer Society of MIT",
-    "Loading Innovation Modules..."
-  ];
+  "Welcome to CSMIT",
+  "Empowering Future Technocrats..."
+];
+
 
   useEffect(() => {
     if (showIntro && currentLine < lines.length) {
@@ -147,6 +149,7 @@ export default function App() {
         {/* Public pages */}
         <Route path="/" element={<HomePage />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
 
         {/* Logged-in user routes */}
         <Route element={<ProtectedRoute />}>

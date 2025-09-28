@@ -47,7 +47,7 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({ onClose }) => {
     formData.append('pdf', pdf);
 
     try {
-      const response = await fetch('http://localhost:5001/submit-experience', { // Updated port to 5001
+      const response = await fetch('http://localhost:5001/placements/submit-experience', { // Updated port to 5001
         method: 'POST',
         body: formData,
       });

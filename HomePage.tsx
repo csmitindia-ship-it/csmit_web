@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, Link} from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Header from "./ui/Header";
+import { FaBullseye, FaEye, FaChevronDown } from "react-icons/fa";
 
 
 import backgroundImage from './Login_Sign/photo.jpeg';
@@ -38,6 +39,8 @@ import Ananya from './Photos/Ananya.jpg';
 import abinesh from './Photos/abinesh.jpeg';
 import vijayashree from './Photos/vijayashree.jpeg';
 import aravinth from './Photos/aravinth.jpeg';
+import HomePageGallery from './components/HomePageGallery';
+import CsmitLogo from './Photos/Logo.png';
 
 // --- Data for different sections ---
 
@@ -46,14 +49,6 @@ const featuredAlumni = [
   { name: "Vijayashree Sridhar", dept: "IT", year: 2023, role: "Member of Technical Staff, Adobe", achievement: "Product Intern at Adobe", imageUrl: vijayashree },
   { name: "Aravinth A", dept: "IT", year: 2026, role: "SDET ,DE Shaw", achievement: "SDET Intern at DE Shaw", imageUrl: aravinth },
 ];
-
-type AlumniDept = 'CSE' | 'IT' | 'ECE';
-
-const allAlumni: Record<AlumniDept, { name: string; year: number; role: string; achievement: string; imageUrl: string; }[]> = {
-    CSE: [ { name: "Arjun Nair", year: 2020, role: "Sr. Software Engineer, Google", achievement: "Led Google Pay India features.", imageUrl: "https://placehold.co/150x150/1A1A2E/A78BFA?text=AN" } ],
-    IT: [ { name: "Priya Menon", year: 2019, role: "Product Manager, Microsoft", achievement: "Launched Azure AI services.", imageUrl: "https://placehold.co/150x150/1A1A2E/A78BFA?text=PM" } ],
-    ECE: [ { name: "Rahul Krishnan", year: 2021, role: "Founder, TechVenture", achievement: "Built IoT platform for 10M+ devices.", imageUrl: "https://placehold.co/150x150/1A1A2E/A78BFA?text=RK" } ],
-};
 
 const achievements = [
   { year: "2024", title: "Best Technical Club Award", description: "Recognized for outstanding contribution to student development." },
@@ -65,18 +60,18 @@ const clubMembers = [
     { name: "Rawin S", role: "Chairperson", dept: "IT", email: "shanmugamrawin82@gmail.com", imageUrl:Rawin },
     { name: "Nithin G", role: "Vice Chairperson", dept: "RPT", email: "nithingancsan004@gmail.com", imageUrl: Nithin },
     { name: "Subramanian K", role: "Club Ambassador", dept: "IT", email: "subukarthi29@gmail.com", imageUrl: Subramani },
+    { name: "Divakar S", role: "Head of Web Development", dept: "IT", email: "divakardivakar30057@gmail.com", imageUrl: Diva },
     { name: "Bhuvanesh P S", role: "General Secretary-Operations", dept: "PT", email: "psbhuvanesh2005@gmail.com", imageUrl:Bhuvanesh},
     { name: "Kamalesh S", role: "General Secretary-Administration", dept: "PT", email: "kamalesh135@gmail.com", imageUrl: Kamalesh },
+    { name: "Kalkidharan KS", role: "Head of Public Relations (PR)", dept: "IT", email: "kskalkidharan@gmail.com", imageUrl: kalkiImage },
+    { name: "Ajay R", role: "Guest Relation Officer", dept: "IT", email: "ajayravi250@gmail.com", imageUrl: Ajay },
+    { name: "Ullas A U", role: "Treasurer", dept: "IT", email: "ullasullas2187@gmail.com", imageUrl: Ullas },
     { name: "Praba Sree C", role: "Joint Secretary", dept: "RPT", email: "prabasreechellappa@gmail,com", imageUrl: Praba },
     { name: "Haritha K", role: "Executive Director", dept: "IT", email: "harithakandasamy4@gmail.com", imageUrl: Haritha },
     { name: "Ananya V", role: "Executive board member", dept: "IT", email: "ananyavenkat23@gmail.com", imageUrl: Ananya },
     { name: "Mithun Sabari V", role: "Chief Technical Officer", dept: "CT", email: "mithunoffO8@gmail.com", imageUrl: Mithun },
-    { name: "Ullas A U", role: "Treasurer", dept: "IT", email: "ullasullas2187@gmail.com", imageUrl: Ullas },
-    { name: "Divakar S", role: "Head of Web Development", dept: "IT", email: "divakardivakar30057@gmail.com", imageUrl: Diva },
     { name: "Sathivikash S", role: "Director of Events and Planning", dept: "AE", email: "sakthivikash70@gmail.com", imageUrl: Sakthi },
-    { name: "Kalkidharan KS", role: "Head of Public Relations (PR)", dept: "IT", email: "kskalkidharan@gmail.com", imageUrl: kalkiImage },
     { name: "Mouli S", role: "Head of Social Media and Digital Engagement", dept: "PT", email: "senthilmouli1978@gmail.com", imageUrl: Mouli },
-    { name: "Ajay R", role: "Guest Relation Officer", dept: "IT", email: "ajayravi250@gmail.com", imageUrl: Ajay },
     { name: "Sindhu J", role: "Creative Director-Design & Visual Media", dept: "IT", email: "sindhu30sindhu30@gmail.com", imageUrl: Sindhu },
     { name: "Mohamed Salih M", role: "Logistic and Operations", dept: "CT", email: "mdsalih.m2005@gmail.com", imageUrl: Salidh },
 ];
@@ -98,10 +93,10 @@ const sponsors = [
 ];
 
 export default function HomePage() {
-  const [activeAlumniTab, setActiveAlumniTab] = useState<AlumniDept>('CSE');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+  const [showAllMembers, setShowAllMembers] = useState(false);
   const location = useLocation();
   const { } = useAuth();
 
@@ -147,25 +142,8 @@ export default function HomePage() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-        
-        .glow-button:hover { box-shadow: 0 0 15px 2px rgba(167, 139, 250, 0.6); }
-
-        @keyframes marquee {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-100%); }
-        }
-        .animate-marquee {
-          animation: marquee 30s linear infinite;
-        }
-      `}</style>
-    
       <div 
         className="relative min-h-screen font-sans text-gray-200 overflow-x-hidden"
-        style={{
-          fontFamily: "'Poppins', sans-serif",
-        }}
       >
         {/* Background Image Layer */}
         <div
@@ -182,6 +160,7 @@ export default function HomePage() {
 
         <main className="relative z-10 pt-16">
             <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center px-4 relative pt-20">
+              <img src={CsmitLogo} alt="CSMIT Logo" className="w-58 h-48 mb-4" />
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">CSMIT – Computer Society of MIT</h1>
               <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-3xl">Fostering innovation and technical excellence through collaboration and hands-on learning.</p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -207,28 +186,49 @@ export default function HomePage() {
 
             <section id="about" className="py-20 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-4xl mx-auto text-center bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg">
-                    <h2 className="text-3xl font-bold mb-6 text-white">About CSMIT</h2>
-                    <p className="text-lg text-gray-300 mb-8">The Computer Society of MIT (CSMIT), founded in 1983 at Madras Institute of Technology, Anna University, began as a computer club
-                      teaching basic programming and hardware tools. With the rise of Computer Science and IT departments, it grew into an inclusive platform for students across streams, fostering coding, technical skills, and industry readiness. Today, CSMIT actively organizes national-level symposiums, training, and placement preparation, transforming students into skilled technocrats.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-                        <div className="bg-gray-800/80 p-6 rounded-lg">
-                            <h3 className="text-xl font-bold text-purple-400 mb-2">Our Mission</h3>
-                            <p>To cultivate technical excellence, innovation, and collaborative learning by empowering students with
-                               the skills and mindset to thrive in the ever-evolving tech landscape.</p>
-                        </div>
-                        <div className="bg-gray-800/80 p-6 rounded-lg">
-                            <h3 className="text-xl font-bold text-purple-400 mb-2">Our Vision</h3>
-                            <p>To be the leading society shaping the next generation of tech innovators.</p>
-                        </div>
+                  <h2 className="text-3xl font-bold mb-6 text-white">About CSMIT</h2>
+                  <p className="text-lg text-gray-300 mb-8">
+                    The Computer Society of MIT (CSMIT), founded in 1983 at Madras Institute
+                    of Technology, Anna University, began as a computer club teaching basic
+                    programming and hardware tools. With the rise of Computer Science and IT
+                    departments, it grew into an inclusive platform for students across
+                    streams, fostering coding, technical skills, and industry readiness. Today,
+                    CSMIT actively organizes national-level symposiums, training, and placement
+                    preparation, transforming students into skilled technocrats.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                    <div className="bg-gray-800/80 p-6 rounded-lg flex items-start space-x-4 hover:scale-105 transition-transform duration-300">
+                      <FaBullseye className="text-purple-400 text-3xl flex-shrink-0 mt-1" />
+                      <div>
+                        <h3 className="text-xl font-bold text-purple-400 mb-2">Our Mission</h3>
+                        <p className="text-gray-300">
+                          To cultivate technical excellence, innovation, and collaborative
+                          learning by empowering students with the skills and mindset to thrive
+                          in the ever-evolving tech landscape.
+                        </p>
+                      </div>
                     </div>
+
+                  <div className="bg-gray-800/80 p-6 rounded-lg flex items-start space-x-4 hover:scale-105 transition-transform duration-300">
+                    <FaEye className="text-purple-400 text-3xl flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="text-xl font-bold text-purple-400 mb-2">Our Vision</h3>
+                      <p className="text-gray-300">
+                        To be the leading society shaping the next generation of tech
+                        innovators.
+                      </p>
+                    </div>
+                  </div>
                 </div>
+              </div>
             </section>
 
             <section id="faculty" className="py-20 px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-bold text-center mb-12 text-white">Faculty Advisors</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                <div className="flex flex-wrap justify-center gap-8 max-w-7xl mx-auto">
                     {faculty.map(person => (
-                        <div key={person.name} className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-6 rounded-lg text-center transition-all duration-300 hover:border-purple-400">
+                        <div key={person.name} className="w-full sm:w-80 bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-6 rounded-lg text-center transition-all duration-300 hover:border-purple-400">
                             <img src={person.imageUrl} alt={person.name} className="w-24 h-24 rounded-full mx-auto mb-4"/>
                             <h3 className="text-xl font-bold text-white">{person.name}</h3>
                             <p className="text-purple-400">{person.qualification}</p>
@@ -241,8 +241,13 @@ export default function HomePage() {
 
             <section id="members" className="py-20 px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-bold text-center mb-12 text-white">Office Bearers</h2>
+                <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-3xl mx-auto text-center">
+                  Meet our dedicated team of student leaders,
+                Leading CSMIT with vision and dedication.
+                </p>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-                    {clubMembers.map(member => (
+                    {(showAllMembers ? clubMembers : clubMembers.slice(0, 8)).map(member => (
                         <div key={member.name} className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-6 rounded-lg text-center transition-all duration-300 hover:border-purple-400">
                             <img src={member.imageUrl} alt={member.name} className="w-24 h-24 rounded-full mx-auto mb-4"/>
                             <h3 className="text-xl font-bold text-white">{member.name}</h3>
@@ -252,8 +257,20 @@ export default function HomePage() {
                         </div>
                     ))}
                 </div>
+                {!showAllMembers && clubMembers.length > 8 && (
+                    <div className="flex justify-center mt-12">
+                        <button 
+                            onClick={() => setShowAllMembers(true)} 
+                            className="text-purple-400 hover:text-purple-300 transition-colors flex flex-col items-center"
+                            aria-label="Show all office bearers"
+                        >
+                            <span className="text-lg font-medium">View More</span>
+                            <FaChevronDown className="text-2xl mt-1 animate-bounce" />
+                        </button>
+                    </div>
+                )}
             </section>
-
+                    
             <section id="achievements" className="py-20 px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-bold text-center mb-16 text-white">Our Journey of Excellence</h2>
                 <div className="relative max-w-4xl mx-auto">
@@ -273,21 +290,43 @@ export default function HomePage() {
                     ))}
                 </div>
             </section>
-
+                    <HomePageGallery />
                         <section id="events" className="py-20 px-4 sm:px-6 lg:px-8">
                 <h2 className="text-3xl font-bold text-center mb-12 text-white">Tech Fests</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                    <div className="bg-gray-900/70 backdrop-blur-md border border-gray-700 p-8 rounded-lg">
+                    <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg transform transition-transform hover:-translate-y-2 hover:shadow-xl hover:shadow-purple-500/20">
                         <h3 className="text-2xl font-bold text-white mb-3">ENIGMA</h3>
-                        <p className="text-gray-300 mb-4">A premier technical symposium featuring cutting-edge competitions in AI, ML, and emerging technologies.</p>
+                        <div className="text-gray-300 mb-4 text-left">
+                            <p><span className="font-bold text-purple-400">Type:</span> Annual intra-college technical event.</p>
+                            <p><span className="font-bold text-purple-400">Focus:</span> Programming, IT, debugging, and problem-solving contests.</p>
+                            <p className="font-bold text-purple-400 mt-2">Highlights:</p>
+                            <ul className="list-disc list-inside text-gray-400">
+                                <li>Huge prize money.</li>
+                                <li>FOSS quiz, cryptic/maths/hacking quizzes.</li>
+                                <li>Workshops on trending technical topics (like Android, applications).</li>
+                                <li>Lectures on new technologies.</li>
+                            </ul>
+                            <p className="mt-2"><span className="font-bold text-purple-400">Purpose:</span> Reward talented students, inspire computer enthusiasts across campus.</p>
+                        </div>
                         <div className="flex gap-4 mt-4">
                             <Link to="/events?symposium=Enigma" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
                             
                         </div>
                     </div>
-                    <div className="bg-gray-900/70 backdrop-blur-md border border-gray-700 p-8 rounded-lg">
+                    <div className="bg-gray-900/70 backdrop-blur-md border border-purple-500/30 p-8 rounded-lg transform transition-transform hover:-translate-y-2 hover:shadow-xl hover:shadow-purple-500/20">
                         <h3 className="text-2xl font-bold text-white mb-3">CARTE BLANCHE</h3>
-                        <p className="text-gray-300 mb-4">An innovation fest celebrating creativity in technology with workshops, seminars, and competitions.</p>
+                        <div className="text-gray-300 mb-4 text-left">
+                            <p><span className="font-bold text-purple-400">Type:</span> Annual national-level inter-college technical event.</p>
+                            <p><span className="font-bold text-purple-400">Focus:</span> Open source software, technical competitions, and creative problem-solving.</p>
+                            <p className="font-bold text-purple-400 mt-2">Highlights:</p>
+                            <ul className="list-disc list-inside text-gray-400">
+                                <li>Encourages participants to create their own software or tweak existing ones.</li>
+                                <li>Large participation since its start in 2005.</li>
+                                <li>Huge impact on the free software community in India.</li>
+                                <li>Platform for showcasing budding software computing talent.</li>
+                            </ul>
+                            <p className="mt-2"><span className="font-bold text-purple-400">Purpose:</span> Promote open-source knowledge, inspire innovation, and emphasize open-source importance.</p>
+                        </div>
                         <div className="flex gap-4 mt-4">
                             <Link to="/events?symposium=Carteblanche" className="px-5 py-2 border border-purple-400 text-purple-400 text-sm font-semibold rounded-lg hover:bg-purple-400 hover:text-black transition">View Events</Link>
                             
@@ -296,34 +335,7 @@ export default function HomePage() {
                 </div>
             </section>
 
-            <section id="alumni" className="py-20 px-4 sm:px-6 lg:px-8">
-                <h2 className="text-3xl font-bold text-center mb-12 text-white">Alumni Achievements</h2>
-                <div className="max-w-5xl mx-auto">
-                    <div className="flex justify-center border-b border-gray-700 mb-8">
-                        {(Object.keys(allAlumni) as AlumniDept[]).map((dept: AlumniDept) => (
-                            <button
-                                key={dept}
-                                onClick={() => setActiveAlumniTab(dept)}
-                                className={`px-6 py-3 text-sm font-medium transition ${activeAlumniTab === dept ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'}`}
-                            >
-                                {dept}
-                            </button>
-                        ))}
-                    </div>
-                    <div>
-                        {allAlumni[activeAlumniTab].map(alumnus => (
-                        <div key={alumnus.name} className="bg-gray-900/70 backdrop-blur-md p-4 rounded-lg mb-4 flex items-center border border-purple-500/30">
-                                <img src={alumnus.imageUrl} alt={alumnus.name} className="w-16 h-16 rounded-full mr-4"/>
-                                <div>
-                                    <h3 className="text-lg font-bold text-white">{alumnus.name} ({alumnus.year})</h3>
-                                    <p className="text-purple-400 text-sm">{alumnus.role}</p>
-                                    <p className="text-gray-300 text-sm mt-1">{alumnus.achievement}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            
 
             <section id="sponsors" className="py-20">
                 <h2 className="text-3xl font-bold text-center mb-12 text-white">Our Valued Sponsors</h2>

@@ -10,7 +10,6 @@ interface Experience {
   year_of_passing: number;
   company: string;
   linkedin_url: string;
-  pdf_path: string;
   status: 'pending' | 'approved' | 'rejected';
 }
 
@@ -26,7 +25,7 @@ const ApprovedExperiencesPage: React.FC = () => {
   const fetchExperiences = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/placements/admin/approved-experiences');
+      const response = await fetch('http://localhost:5001/placements/admin/approved-experiences');
       if (response.ok) {
         const data = await response.json();
         setApprovedExperiences(data);
@@ -55,7 +54,7 @@ const ApprovedExperiencesPage: React.FC = () => {
 
   const confirmDelete = async (id: number) => {
     try {
-      const response = await fetch(`/api/placements/admin/delete-experience/${id}`, {
+      const response = await fetch(`http://localhost:5001/placements/admin/delete-experience/${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
@@ -70,15 +69,6 @@ const ApprovedExperiencesPage: React.FC = () => {
       showModal('Error', 'Failed to delete experience.');
     }
     setModal({ isOpen: false, title: '', message: '' });
-  };
-
-  const getPdfUrl = (pdfPath: string) => {
-    const pathParts = pdfPath.split('uploads');
-    if (pathParts.length > 1) {
-      const relativePath = pathParts[1].split('\\').join('/');
-      return `http://localhost:5001/uploads${relativePath}`;
-    }
-    return '';
   };
 
   return (
@@ -106,7 +96,7 @@ const ApprovedExperiencesPage: React.FC = () => {
                         <p><strong className="font-semibold text-purple-400">Company:</strong> {exp.company}</p>
                       </div>
                     </div>
-                    <a href={getPdfUrl(exp.pdf_path)} target="_blank" rel="noopener noreferrer" className="w-full md:w-auto text-center px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
+                    <a href={`http://localhost:5001/placements/experiences/${exp.id}/pdf`} target="_blank" rel="noopener noreferrer" className="w-full md:w-auto text-center px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
                       View Resume
                     </a>
                   </div>

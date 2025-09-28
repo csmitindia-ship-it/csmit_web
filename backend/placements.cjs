@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
 const multer = require('multer');
 
 module.exports = function (db, upload) {
@@ -19,11 +18,12 @@ module.exports = function (db, upload) {
     });
   };
 
+  // Submit new experience with PDF stored as blob
   router.post('/submit-experience', handleUpload, async (req, res) => {
     const { name, email, type, year, company, linkedin } = req.body;
-    const pdfPath = req.file ? req.file.path : null;
+    const pdfBuffer = req.file ? req.file.buffer : null;
 
-    if (!name || !email || !type || !year || !company || !pdfPath) {
+    if (!name || !email || !type || !year || !company || !pdfBuffer) {
       return res.status(400).json({
         type: 'warning',
         title: 'Missing Fields',
@@ -33,8 +33,10 @@ module.exports = function (db, upload) {
 
     try {
       await db.execute(
-        'INSERT INTO experiences (name, email, type, year_of_passing, company, linkedin_url, pdf_path) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [name, email, type, year, company, linkedin, pdfPath]
+        `INSERT INTO experiences 
+         (name, email, type, year_of_passing, company, linkedin_url, pdf_file) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [name, email, type, year, company, linkedin, pdfBuffer]
       );
       res.status(201).json({
         type: 'success',
@@ -52,10 +54,11 @@ module.exports = function (db, upload) {
     }
   });
 
+  // Fetch all experiences (without PDF blob for performance)
   router.get('/experiences', async (req, res) => {
     try {
       const [rows] = await db.execute(
-        'SELECT * FROM experiences ORDER BY company'
+        'SELECT id, name, email, type, year_of_passing, company, linkedin_url, status, createdAt FROM experiences ORDER BY company'
       );
       res.json(rows);
     } catch (error) {
@@ -68,10 +71,44 @@ module.exports = function (db, upload) {
     }
   });
 
+  // Retrieve PDF by ID
+  router.get('/experiences/:id/pdf', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const [rows] = await db.execute(
+        'SELECT pdf_file FROM experiences WHERE id = ?',
+        [id]
+      );
+
+      if (rows.length === 0 || !rows[0].pdf_file) {
+        return res.status(404).json({
+          type: 'warning',
+          title: 'Not Found',
+          message: 'PDF not found for this experience.',
+        });
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="experience_${id}.pdf"`
+      );
+      res.send(rows[0].pdf_file);
+    } catch (error) {
+      console.error('Error fetching PDF:', error);
+      res.status(500).json({
+        type: 'error',
+        title: 'Fetch Failed',
+        message: 'Failed to fetch PDF.',
+      });
+    }
+  });
+
+  // Pending experiences
   router.get('/admin/pending-experiences', async (req, res) => {
     try {
       const [rows] = await db.execute(
-        'SELECT * FROM experiences WHERE status = ?',
+        'SELECT id, name, email, type, year_of_passing, company, linkedin_url, status FROM experiences WHERE status = ?',
         ['pending']
       );
       res.json(rows);
@@ -85,10 +122,11 @@ module.exports = function (db, upload) {
     }
   });
 
+  // Approved experiences
   router.get('/admin/approved-experiences', async (req, res) => {
     try {
       const [rows] = await db.execute(
-        'SELECT * FROM experiences WHERE status = ?',
+        'SELECT id, name, email, type, year_of_passing, company, linkedin_url, status FROM experiences WHERE status = ?',
         ['approved']
       );
       res.json(rows);
@@ -102,6 +140,7 @@ module.exports = function (db, upload) {
     }
   });
 
+  // Update status
   router.post('/admin/update-experience-status', async (req, res) => {
     const { id, status } = req.body;
     if (!id || !status) {
@@ -139,12 +178,13 @@ module.exports = function (db, upload) {
     }
   });
 
+  // Delete experience
   router.delete('/admin/delete-experience/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
       const [rows] = await db.execute(
-        'SELECT pdf_path FROM experiences WHERE id = ?',
+        'SELECT id FROM experiences WHERE id = ?',
         [id]
       );
       if (rows.length === 0) {
@@ -154,14 +194,8 @@ module.exports = function (db, upload) {
           message: 'Experience not found.',
         });
       }
-      const pdfPath = rows[0].pdf_path;
 
       await db.execute('DELETE FROM experiences WHERE id = ?', [id]);
-
-      if (pdfPath && fs.existsSync(pdfPath)) {
-        fs.unlinkSync(pdfPath);
-        console.log(`Deleted PDF file: ${pdfPath}`);
-      }
 
       res.json({
         type: 'success',
