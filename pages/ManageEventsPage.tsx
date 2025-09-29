@@ -194,8 +194,21 @@ const App: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'number' ? parseInt(value, 10) : value;
-    if (editingEvent) setEditingEvent({ ...editingEvent, [name]: val });
-    else setNewEvent((prev) => ({ ...prev, [name]: val }));
+
+    if (editingEvent) {
+        const updatedEvent = { ...editingEvent, [name]: val };
+        if (name === 'eventCategory' && value === 'Workshop') {
+            updatedEvent.numberOfRounds = 0;
+        }
+        setEditingEvent(updatedEvent);
+    } else {
+        const updatedNewEvent = { ...newEvent, [name]: val };
+        if (name === 'eventCategory' && value === 'Workshop') {
+            updatedNewEvent.numberOfRounds = 0;
+            setRounds([]);
+        }
+        setNewEvent(updatedNewEvent);
+    }
   };
 
   const handleRoundChange = (index: number, field: keyof Round, value: string | number) => {
@@ -463,13 +476,14 @@ const App: React.FC = () => {
                         name="numberOfRounds"
                         value={editingEvent?.numberOfRounds || newEvent.numberOfRounds}
                         onChange={handleNumberOfRoundsChange}
-                        min={1}
+                        min={0}
                         required
+                        disabled={(editingEvent?.eventCategory || newEvent.eventCategory) === 'Workshop'}
                         className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white"
                       />
                     </div>
 
-                    {rounds.map((round, idx) => (
+                    {(editingEvent?.eventCategory || newEvent.eventCategory) !== 'Workshop' && rounds.map((round, idx) => (
                       <div key={idx} className="bg-gray-800/50 p-6 rounded-lg border border-gray-700 space-y-4">
                         <textarea
                           value={round.roundDetails}

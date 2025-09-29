@@ -157,6 +157,9 @@ export default function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/enrolled-events" element={<EnrolledEventsPage />} />
         </Route>
+
+        {/* Catch-all route for unmatched paths */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
   );

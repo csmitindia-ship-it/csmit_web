@@ -253,7 +253,7 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
               </ThemedModal>
             </>
           )}
-          {user && user.role !== "admin" && anySymposiumOpen() && (
+          {user && user.role !== "admin" && (
             <a
               href="/enrolled-events"
               onClick={(e) => {
@@ -265,7 +265,7 @@ const Header: React.FC<HeaderProps> = ({ setIsLoginModalOpen, setIsSignUpModalOp
               My Events
             </a>
           )}
-          {user && user.role !== "admin" && anySymposiumOpen() && (
+          {user && user.role !== "admin" && (
             <a
               href="/cart"
               onClick={(e) => {

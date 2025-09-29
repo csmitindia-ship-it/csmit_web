@@ -95,7 +95,7 @@ const EventsPage: React.FC = () => {
     try {
       const response = await fetch('http://localhost:5001/symposium/status');
       const data = await response.json();
-      setSymposiumStatus(data);
+      setSymposiumStatus(data.data);
     } catch (error) {
       console.error('Error fetching symposium status:', error);
     }
@@ -108,7 +108,7 @@ const EventsPage: React.FC = () => {
     }
     console.log('EventsPage: Fetching registered events for user.email:', user.email);
     try {
-      const response = await fetch(`http://localhost:5001/registrations/${user.email}`);
+      const response = await fetch(`http://localhost:5001/registrations/by-email/${user.email}`);
       const data = await response.json();
       console.log('EventsPage: Raw data from backend for registered events:', data);
       setRegisteredEvents(data.map((reg: any) => reg.eventId));

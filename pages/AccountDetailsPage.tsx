@@ -22,6 +22,7 @@ const AccountDetailsPage: React.FC = () => {
     accountNumber: '',
     ifscCode: '',
   });
+  const [qrCodePdf, setQrCodePdf] = useState<File | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modal, setModal] = useState({ isOpen: false, title: '', message: '' });
 
@@ -58,15 +59,33 @@ const AccountDetailsPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const formData = new FormData();
+    formData.append('accountName', form.accountName);
+    formData.append('bankName', form.bankName);
+    formData.append('accountNumber', form.accountNumber);
+    formData.append('ifscCode', form.ifscCode);
+    if (qrCodePdf) {
+      formData.append('qrCodePdf', qrCodePdf);
+    }
+
     try {
-      if (editingId) {
-        await axios.put(`http://localhost:5001/admin/accounts/${editingId}`, form);
-        showModal('Success', 'Account details updated successfully!');
-      } else {
-        await axios.post('http://localhost:5001/admin/accounts', form);
-        showModal('Success', 'Account details added successfully!');
+      const url = editingId 
+        ? `http://localhost:5001/admin/accounts/${editingId}` 
+        : 'http://localhost:5001/admin/accounts';
+      const method = editingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save account details');
       }
+
+      showModal('Success', `Account details ${editingId ? 'updated' : 'added'} successfully!`);
       setForm({ accountName: '', bankName: '', accountNumber: '', ifscCode: '' });
+      setQrCodePdf(null);
       setEditingId(null);
       fetchAccountDetails();
     } catch (err) {
@@ -167,6 +186,17 @@ const AccountDetailsPage: React.FC = () => {
               required
             />
           </div>
+          <div>
+            <label htmlFor="qrCodePdf" className="block text-sm font-medium text-gray-300">QR Code PDF</label>
+            <input
+                type="file"
+                id="qrCodePdf"
+                name="qrCodePdf"
+                onChange={(e) => setQrCodePdf(e.target.files ? e.target.files[0] : null)}
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                accept="application/pdf"
+            />
+          </div>
           <button
             type="submit"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
@@ -176,7 +206,7 @@ const AccountDetailsPage: React.FC = () => {
           {editingId && (
             <button
               type="button"
-              onClick={() => { setEditingId(null); setForm({ accountName: '', bankName: '', accountNumber: '', ifscCode: '' }); }}
+              onClick={() => { setEditingId(null); setForm({ accountName: '', bankName: '', accountNumber: '', ifscCode: '' }); }} 
               className="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition"
             >
               Cancel

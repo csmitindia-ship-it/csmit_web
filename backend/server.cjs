@@ -168,6 +168,7 @@ async function createTablesIfNotExists() {
       bankName VARCHAR(255) NOT NULL,
       accountNumber VARCHAR(255) NOT NULL,
       ifscCode VARCHAR(255) NOT NULL,
+      qrCodePdf BLOB,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -257,7 +258,6 @@ async function createTablesIfNotExists() {
       );
     `;
     await db.execute(createOrganizersTableQuery);
-    console.log('Organizers table is ready.');
 
     const createRoundWinnersTableQuery = `
       CREATE TABLE IF NOT EXISTS round_winners (
@@ -271,7 +271,6 @@ async function createTablesIfNotExists() {
       );
     `;
     await db.execute(createRoundWinnersTableQuery);
-    console.log('Round winners table is ready.');
 
     const createSymposiumStatusTableQuery = `
       CREATE TABLE IF NOT EXISTS symposium_status (
@@ -283,7 +282,6 @@ async function createTablesIfNotExists() {
       );
     `;
     await db.execute(createSymposiumStatusTableQuery);
-    console.log('Symposium status table is ready.');
 
     // Check if startDate column exists and add it if it doesn't
     const [columns] = await db.execute(`
@@ -296,12 +294,21 @@ async function createTablesIfNotExists() {
 
     if (columns.length === 0) {
       await db.execute('ALTER TABLE symposium_status ADD COLUMN startDate DATE');
-      console.log('Added startDate column to symposium_status table.');
     }
 
     const symposiums = ['Enigma', 'Carteblanche'];
+
+    const createRegistrationTimerTableQuery = `
+      CREATE TABLE IF NOT EXISTS registration_timer (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        end_time DATETIME NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await db.execute(createRegistrationTimerTableQuery);
+
   } catch (error) {
-    console.error('Error creating tables:', error);
     process.exit(1);
   }
 }
@@ -322,13 +329,14 @@ async function startServer() {
   const authRouter = require('./auth.cjs')(db, transporter);
   const eventsRouter = require('./events.cjs')(db, uploadEventPoster, eventPosterDir, transporter);
   const placementsRouter = require('./placements.cjs')(db, uploadPdf);
-  const accountsRouter = require('./accounts.cjs')(db);
+  const accountsRouter = require('./accounts.cjs')(db, uploadPdf);
   const registrationsRouter = require('./registrations.cjs')(db, uploadTransactionScreenshot);
   const cartRouter = require('./cart.cjs')(db);
   const verificationRouter = require('./verification.cjs')(db);
   const symposiumRouter = require('./symposium.cjs')(db);
   const organizerRouter = require('./organizer.cjs')(db);
   const galleryRouter = require('./gallery.cjs');
+  const timerRouter = require('./timer.cjs')(db);
 
   app.use('/auth', authRouter);
   app.use('/events', eventsRouter);
@@ -340,6 +348,7 @@ async function startServer() {
   app.use('/symposium', symposiumRouter);
   app.use('/organizers', organizerRouter);
   app.use('/gallery', galleryRouter);
+  app.use('/timer', timerRouter);
 
   // --- Start Server ---
   app.use((req, res, next) => {

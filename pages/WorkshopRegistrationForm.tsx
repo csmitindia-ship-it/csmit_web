@@ -21,6 +21,7 @@ interface AccountDetails {
   bankName: string;
   accountNumber: string;
   ifscCode: string;
+  qrCodePdf?: { type: 'Buffer', data: number[] };
 }
 
 interface WorkshopRegistrationFormProps {
@@ -35,13 +36,24 @@ interface WorkshopRegistrationFormProps {
 const WorkshopRegistrationForm: React.FC<WorkshopRegistrationFormProps> = ({ userId, userName, paidEvents, onRegistrationSuccess, onCancel }) => {
   const [transactionId, setTransactionId] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
-  const [transactionScreenshot, setTransactionScreenshot] = useState<File | null>(null);
-  const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const totalAmount = paidEvents.reduce((sum, item) => sum + item.eventDetails.registrationFees, 0);
-
-  useEffect(() => {
-    const fetchAccountDetails = async () => {
+    const [transactionScreenshot, setTransactionScreenshot] = useState<File | null>(null);
+    const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const totalAmount = paidEvents.reduce((sum, item) => sum + item.eventDetails.registrationFees, 0);
+  
+  const bufferToBase64 = (buffer: { type: string; data: number[] }) => {
+    const uint8Array = new Uint8Array(buffer.data);
+    let binary = '';
+    const chunkSize = 0x8000; // for large buffers
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    return window.btoa(binary);
+  };
+  
+    useEffect(() => {
+      const fetchAccountDetails = async () => {
       if (paidEvents.length === 0) return;
 
       const eventWithHighestFee = paidEvents.reduce((max, event) => 
@@ -76,6 +88,7 @@ const WorkshopRegistrationForm: React.FC<WorkshopRegistrationFormProps> = ({ use
       alert('Please upload a transaction screenshot.');
       return;
     }
+
 
     try {
       const formData = new FormData();
@@ -137,6 +150,18 @@ const WorkshopRegistrationForm: React.FC<WorkshopRegistrationFormProps> = ({ use
                 <p><strong>Account Number:</strong> {accountDetails.accountNumber}</p>
                 <p><strong>IFSC Code:</strong> {accountDetails.ifscCode}</p>
               </div>
+              {accountDetails.qrCodePdf && (
+  <div className="mt-4">
+    <h4 className="text-lg font-semibold text-purple-300 mb-2">QR Code</h4>
+    <embed
+      src={`data:application/pdf;base64,${bufferToBase64(accountDetails.qrCodePdf)}`}
+      type="application/pdf"
+      width="100%"
+      height="500px"
+    />
+  </div>
+)}
+
               <p className="text-sm text-gray-400 mt-2">Please transfer the total amount to this account and enter the transaction ID below.</p>
             </div>
           ) : (

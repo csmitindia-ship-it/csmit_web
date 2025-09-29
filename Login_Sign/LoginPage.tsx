@@ -10,13 +10,11 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchToForgotPassword }: LoginPageProps) {
-  if (!isOpen) return null;
-
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const { login} = useAuth();
+  const { login } = useAuth();
 
   const handleSwitchToSignUp = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -65,16 +63,19 @@ export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchT
     }
   };
 
+  // Fixed: Always return the modal div, hide it when not open
   return (
-    <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    <div
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${
+        isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+      }`}
       onClick={onClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-md bg-gray-900/80 border border-purple-500/30 rounded-2xl p-8 shadow-2xl shadow-purple-500/20 z-10"
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-purple-400 transition-colors duration-300"
         >
@@ -91,8 +92,8 @@ export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchT
         <form className="space-y-6" onSubmit={handleLogin}>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               placeholder="you@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -102,14 +103,14 @@ export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchT
 
           <div className="relative">
             <label className="block text-sm font-medium text-gray-400 mb-2">Password</label>
-            <input 
-              type={showPassword ? 'text' : 'password'} 
+            <input
+              type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 bg-gray-800/60 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
             />
-            <button 
+            <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-gray-400 hover:text-purple-400"
@@ -131,7 +132,9 @@ export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchT
           </div>
 
           <div className="flex items-center justify-between">
-            <a href="#" onClick={handleSwitchToForgotPassword} className="text-sm text-purple-400 hover:underline">Forgot Password?</a>
+            <a href="#" onClick={handleSwitchToForgotPassword} className="text-sm text-purple-400 hover:underline">
+              Forgot Password?
+            </a>
           </div>
 
           <div>
@@ -142,7 +145,10 @@ export default function LoginPage({ isOpen, onClose, onSwitchToSignUp, onSwitchT
         </form>
 
         <p className="text-center text-sm text-gray-400 mt-8">
-          Don't have an account? <a href="#" onClick={handleSwitchToSignUp} className="font-medium text-purple-400 hover:underline">Sign up</a>
+          Don't have an account?{' '}
+          <a href="#" onClick={handleSwitchToSignUp} className="font-medium text-purple-400 hover:underline">
+            Sign up
+          </a>
         </p>
       </div>
     </div>

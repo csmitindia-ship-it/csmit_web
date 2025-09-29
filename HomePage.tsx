@@ -41,6 +41,7 @@ import vijayashree from './Photos/vijayashree.jpeg';
 import aravinth from './Photos/aravinth.jpeg';
 import HomePageGallery from './components/HomePageGallery';
 import CsmitLogo from './Photos/Logo.png';
+import RegistrationTimer from './components/RegistrationTimer';
 
 // --- Data for different sections ---
 
@@ -100,8 +101,6 @@ export default function HomePage() {
   const location = useLocation();
   const { } = useAuth();
 
-  
-
   useEffect(() => {
     window.history.scrollRestoration = 'manual';
     const handleLoad = () => window.scrollTo(0, 0);
@@ -159,6 +158,11 @@ export default function HomePage() {
         <Header setIsLoginModalOpen={setIsLoginModalOpen} setIsSignUpModalOpen={setIsSignUpModalOpen}  />
 
         <main className="relative z-10 pt-16">
+            <div className="fixed top-16 left-0 w-screen z-20">
+            <RegistrationTimer />
+          </div>
+
+
             <section id="home" className="min-h-screen flex flex-col items-center justify-center text-center px-4 relative pt-20">
               <img src={CsmitLogo} alt="CSMIT Logo" className="w-58 h-48 mb-4" />
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">CSMIT – Computer Society of MIT</h1>
